@@ -7,6 +7,7 @@ from .exceptions import ServerException
 from .models import Item
 from .models import ItemDrop
 from .models import Requirements
+from .models import Gem
 
 
 class Client(ClientBase):
@@ -34,36 +35,40 @@ class Client(ClientBase):
                 raise RequestException(req, resp)
 
     def get_items(self, where: dict):
-        where_params = []
-        for key, val in where.items():
-            if key.lower() not in self.valid_item_filters:
-                print(f"WARNING: {key} is not a valid filter, continuing without it.")
-                del where[key]
-                continue
-            where_params.append(f'{key} LIKE "%{val}%"')
-        where_str = " AND ".join(where_params)
-        params = {
-            'tables': "items",
-            'fields': f"{','.join(self.valid_item_filters)},_pageName=name",
-            'where': where_str
-        }
+        params = self.item_param_gen(where)
         data = self.request_gen(self.base_url, params=params)
-        result_list = self.extract_cargoquery(data)
+        return self.item_list_gen(data)
+
+    def get_gem(self, where: dict):
+        params = self.gem_param_gen(where)
+        result_list = self.extract_cargoquery(params)
         final_list = []
-        for item in result_list:
-            drops = ItemDrop(item['drop_enabled'], item['drop_level'],
-                             item['drop_level_maximum'], item['drop_leagues'],
-                             item['drop_areas'], item['drop_text'])
-            req = Requirements(item['required_dexterity'], item['required_strength'],
-                               item['required_intelligence'], item['required_level'])
-            item = Item(item['base'], item['class'], item['name'],
-                        item['rarity'], item['size_x'],
-                        (item['size_x'], item['size_y']), drops, req,
-                        item['flavour_text'], item['help_text'], self.bool_(item['is_corrupted']),
-                        self.bool_(item['is_relic']), item['alternate_art_inventory_icons'],
-                        item['quality'], item['implicit_stat_text'], item['explicit_stat_text'])
-
-            final_list.append(item)
+        for gem in result_list:
+            vendor_params = {
+                'tables': "vendor_rewards",
+                'fields': "act,classes",
+                'where': f'''reward="{gem['name']}"'''
+            }
+            vendors_raw = self.request_gen(self.base_url, params=vendor_params)
+            vendors = self.extract_cargoquery(vendors_raw)
+            stats_params = {
+                'tables': "skill_levels",
+                'fields': ','.join(self.valid_gem_level_filters),
+                'where': f'''_pageName="{gem['name']}"'''
+            }
+            stats_raw = self.request_gen(self.base_url, params=stats_params)
+            stats_list = self.extract_cargoquery(stats_raw)
+            stats = {}
+            for stats_dict in stats_list:
+                stats[int(stats_dict['level'])] = stats_dict
+            gem = Gem(gem["skill_id"], gem["cast_time"], gem["description"],
+                      gem["name"], gem["item_class_restriction"], gem["stat_text"],
+                      gem["quality_stat_text"], gem["radius"],
+                      gem["radius_description"], gem["radius_secondary"],
+                      gem["radius_secondary_description"], gem["radius_tertiary"],
+                      gem["radius_tertiary_description"], gem["skill_icon"],
+                      gem["skill_screenshot"], stats,
+                      True if int(gem['has_percentage_mana_cost']) else False,
+                      vendors)
+            final_list.append(gem)
         return final_list
-
-

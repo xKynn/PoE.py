@@ -30,6 +30,7 @@ class Item:
     def __repr__(self):
         return f"<Item: name={self.name} rarity={self.rarity}"
 
+
 class Mod:
     @initializer
     def __init__(self, mod_id, name, group, type, domain, gen_type,
@@ -42,5 +43,6 @@ class Gem:
     def __init__(self, id, cast_time, description, name, weapon_type_restriction,
                  projectile_speed, stat_text, quality_bonus, radius, radius_description,
                  radius_secondary, radius_secondary_description, radius_tertiary,
-                 radius_tertiary_description, skill_icon, skill_id, skill_screenshot):
+                 radius_tertiary_description, skill_icon, skill_screenshot,
+                 stats_per_level, is_aura, vendors):
         pass

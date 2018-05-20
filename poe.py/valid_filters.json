@@ -1,0 +1,21 @@
+{
+  "item": ["base", "class", "name", "rarity", "size_x", "size_y", "drop_leagues",
+           "required_dexterity", "required_strength", "required_intelligence",
+           "required_level", "stat_text", "implicit_stat_text", "quality",
+           "explicit_stat_text", "is_corrupted", "is_relic", "flavour_text",
+           "help_text", "drop_areas", "drop_enabled", "drop_level",
+           "drop_level_maximum", "drop_text"],
+  "gem": ["active_skill_name", "cast_time", "description", "has_percentage_mana_cost",
+          "has_reservation_mana_cost", "item_class_restriction", "max_level",
+          "projectile_speed", "quality_stat_text", "radius", "radius_description",
+          "radius_secondary", "radius_secondary_description", "radius_tertiary",
+          "radius_tertiary_description", "skill_icon", "skill_id", "skill_screenshot",
+          "stat_text","cooldown", "critical_strike_chance", "damage_effectiveness",
+          "damage_multiplier", "dexterity_requirement", "experience", "intelligence_requirement",
+          "level", "level_requirement", "mana_cost", "mana_multiplier", "quality_stat_text",
+          "stat_text", "stored_uses", "strength_requirement", "vaal_souls_requirement", "vaal_stored_uses"],
+  "gem_levels": ["cooldown", "critical_strike_chance", "damage_effectiveness",
+          "damage_multiplier", "dexterity_requirement", "experience", "intelligence_requirement",
+          "level", "level_requirement", "mana_cost", "mana_multiplier", "quality_stat_text",
+          "stat_text", "stored_uses", "strength_requirement", "vaal_souls_requirement", "vaal_stored_uses"]
+}
