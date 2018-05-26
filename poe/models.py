@@ -1,6 +1,3 @@
-from .utils import initializer
-
-
 class BaseItem:
     def __init_(self, name, item_id, page_url):
         self.name = name
@@ -32,7 +29,7 @@ class Requirements:
 
 class Item:
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
-                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, *args):
+                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon, *args):
         self.base = base
         self.item_class = item_class
         self.name = name
@@ -48,6 +45,8 @@ class Item:
         self.quality = quality
         self.implicits = implicits
         self.explicits = explicits
+        self.tags = tags
+        self.icon = icon
 
     def __repr__(self):
         return f"<Item: name={self.name} rarity={self.rarity}>"
@@ -55,10 +54,10 @@ class Item:
 
 class Weapon(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
-                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits,
+                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
                  weapon_stats):
         super().__init__(base, item_class, name, rarity, size, drop, requirements,
-                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits)
+                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon)
         #print(weapon_stats)
         self.attack_speed = weapon_stats['attack speed range text']
         if weapon_stats['chaos damage max range text'] != '0':
@@ -93,10 +92,23 @@ class Weapon(Item):
 
 class Armour(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
-                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits,
+                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
                  armour_stats):
         super().__init__(base, item_class, name, rarity, size, drop, requirements,
-                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits)
+                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon)
+        if armour_stats['armour range text'] != '0':
+            self.armour = armour_stats['armour range text']
+        else:
+            self.armour = None
+        if armour_stats['evasion range text'] != '0':
+            self.evasion = armour_stats['evasion range text']
+        else:
+            self.evasion = None
+        if armour_stats['energy shield range text'] != '0':
+            self.energy_shield = armour_stats['energy shield range text']
+        else:
+            self.energy_shield = None
+        self.quality = "+20%"
 
 
 class Mod:

@@ -1,5 +1,6 @@
 import json
 import os
+import html
 
 from .models import Item
 from .models import Weapon
@@ -88,9 +89,28 @@ class ClientBase:
                 data = req(url, params)
                 stats = self.extract_cargoquery(data)[0]
                 i = Weapon
+            elif 'armour' in item['tags']:
+                params = {
+                    'tables': 'armours',
+                    'fields': ','.join(self.valid_armour_filters),
+                    'where': f'_pageName="{item["name"]}"'
+                }
+                data = req(url, params)
+                stats = self.extract_cargoquery(data)[0]
+                i = Armour
             else:
                 stats = None
                 i = Item
+            print(item['inventory icon'])
+            query_url = "https://pathofexile.gamepedia.com/api.php?action=query"
+            param = {
+                'titles': item['inventory icon'],
+                'prop': 'imageinfo&',
+                'iiprop': 'url'
+            }
+            dat = req(query_url, param)
+            print(dat)
+            image_url = dat['query']['pages'][list(dat['query']['pages'].keys())[0]]['imageinfo'][0]['url']
             drops = ItemDrop(item['drop enabled'], item['drop level'],
                              item['drop level maximum'], item['drop leagues'],
                              item['drop areas'], item['drop text'])
@@ -101,7 +121,8 @@ class ClientBase:
                      item['rarity'], (item['size x'], item['size y']), drops, req,
                      item['flavour text'], item['help text'], self.bool_(item['is corrupted']),
                      self.bool_(item['is relic']), item['alternate art inventory icons'],
-                     item['quality'], item['implicit stat text'], item['explicit stat text'], stats)
+                     item['quality'], item['implicit stat text'], item['explicit stat text'],
+                     item['tags'], image_url, stats)
 
             final_list.append(item)
         return final_list

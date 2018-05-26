@@ -1,30 +1,14 @@
-from functools import wraps
-import inspect
 import html
 import re
 import os
+import urllib3
+
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
 from collections import namedtuple
-
-
-def initializer(func):
-    names, varargs, keywords, defaults = inspect.getargspec(func)
-
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        for name, arg in list(zip(names[1:], args)) + list(kwargs.items()):
-            setattr(self, name, arg)
-
-        # for name, default in zip(reversed(names), reversed(defaults)):
-        #     if not hasattr(self, name):
-        #         setattr(self, name, default)
-
-        func(self, *args, **kwargs)
-
-    return wrapper
+from io import BytesIO
 
 
 class Cursor:
@@ -36,7 +20,7 @@ class Cursor:
 
     @property
     def pos(self):
-        return (self.x, self.y)
+        return self.x, self.y
 
     def move_x(self, quant):
         old_x = self.x
@@ -73,6 +57,7 @@ class ItemRender:
         self.prop_chaos = (208, 32, 144)
         self.unique_color = (175, 96, 37)
         self.prop_desc = (127, 127, 127)
+        self.last_action = str()
 
     def unescape_to_list(self, props):
         matches = self.re.findall(props)
@@ -89,24 +74,21 @@ class ItemRender:
     def calc_size(self, stats):
         width = 0
         height = 0
-        last_stat = ""
         for stat in stats:
             if stat.title == "Separator":
                 height += 8
-                last_stat = "sep"
                 continue
             elif stat.title == "Elemental Damage:":
+                height += 19
                 stat_text = stat.title
                 for element in stat.text.keys():
                     stat_text += f" {stat.text[element]}"
-                last_stat = ""
             elif stat.title == "Requires":
                 height += 19
                 stat_text = stat.title
                 for attr in stat.text.keys():
                     stat_text += f" {attr.title()} {stat.text[attr]}" \
                                  f"{'' if list(stat.text.keys())[-1] == attr else ','}"
-                last_stat = ""
             elif stat.title == "Lore":
                 ht = 4
                 for line in stat.text:
@@ -116,13 +98,11 @@ class ItemRender:
                     if w[0] > width:
                         width = w[0]
                 height += ht
-                last_stat = ""
                 continue
+            elif stat.title == "Image":
+                height += stat.text.size[1] + 6*2
             else:
-                if last_stat == "sep":
-                    height += 19
-                else:
-                    height += 19
+                height += 19
                 stat_text = f"{stat.title}{stat.text}"
 
             print(stat_text)
@@ -136,29 +116,41 @@ class ItemRender:
     def sort_stats(self, item):
         stats = list()
         separator = self.prop("Separator", None, None)
-        stats.append(self.prop(item.item_class, '', self.prop_desc))
-        stats.append(self.prop("Quality: ", item.quality, self.prop_color))
-        if item.physical_damage:
-            stats.append(self.prop("Physical Damage: ", item.physical_damage, self.prop_color))
-        if item.cold_damage or item.fire_damage or item.lightning_damage:
-            # I'd like to do this a bit neater sometime in the future
-            eles = {}
-            if item.fire_damage:
-                eles['fire'] = item.fire_damage
-            if item.cold_damage:
-                eles['cold'] = item.cold_damage
-            if item.lightning_damage:
-                eles['lightning'] = item.lightning_damage
-            stats.append(self.prop("Elemental Damage:", eles, None))
-        if item.chaos_damage:
-            stats.append(self.prop("Chaos Damage: ", item.chaos_damage, self.prop_chaos))
-        if item.critical_chance:
-            stats.append(self.prop("Critical Strike Chance: ", item.critical_chance, None))
-        if item.attack_speed:
-            stats.append(self.prop("Attacks Per Second: ", item.attack_speed, self.prop_color))
-        stats.append(self.prop("Weapon Range: ", item.range, None))
 
-        stats.append(separator)
+        if 'weapon' in item.tags:
+            stats.append(self.prop(item.item_class, '', self.prop_desc))
+            stats.append(self.prop("Quality: ", item.quality, self.prop_color))
+            if item.physical_damage:
+                stats.append(self.prop("Physical Damage: ", item.physical_damage, self.prop_color))
+            if item.cold_damage or item.fire_damage or item.lightning_damage:
+                # I'd like to do this a bit neater sometime in the future
+                eles = {}
+                if item.fire_damage:
+                    eles['fire'] = item.fire_damage
+                if item.cold_damage:
+                    eles['cold'] = item.cold_damage
+                if item.lightning_damage:
+                    eles['lightning'] = item.lightning_damage
+                stats.append(self.prop("Elemental Damage:", eles, None))
+            if item.chaos_damage:
+                stats.append(self.prop("Chaos Damage: ", item.chaos_damage, self.prop_chaos))
+            if item.critical_chance:
+                stats.append(self.prop("Critical Strike Chance: ", item.critical_chance, None))
+            if item.attack_speed:
+                stats.append(self.prop("Attacks Per Second: ", item.attack_speed, self.prop_color))
+            stats.append(self.prop("Weapon Range: ", item.range, None))
+
+            stats.append(separator)
+
+        elif 'armour' in item.tags:
+            stats.append(self.prop("Quality: ", item.quality, self.prop_color))
+            if item.armour:
+                stats.append(self.prop("Armour: ", item.armour, self.prop_color))
+            if item.evasion:
+                stats.append(self.prop("Evasion: ", item.evasion, self.prop_color))
+            if item.energy_shield:
+                stats.append(self.prop("Energy Shield: ", item.energy_shield, self.prop_color))
+            stats.append(separator)
 
         if item.requirements.has_reqs:
             reqs = {}
@@ -189,6 +181,11 @@ class ItemRender:
                 stats.append(separator)
             lore = self.prop('Lore', self.unescape_to_list(item.lore), self.unique_color)
             stats.append(lore)
+        if item.icon:
+            http = urllib3.PoolManager()
+            r = http.request('GET', item.icon, preload_content=False)
+            im = Image.open(BytesIO(r.read()))
+            stats.append(self.prop('Image', im, None))
 
         return stats
 
@@ -197,7 +194,7 @@ class ItemRender:
         box_size = self.calc_size(stats)
         print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
-        item = Image.new('RGB', box_size)
+        item = Image.new('RGBA', box_size, color='black')
         item = ImageOps.expand(item, border=1, fill=self.unique_color)
         cur = Cursor(center_x)
         item.paste(self.namebar_left, cur.pos)
@@ -219,7 +216,6 @@ class ItemRender:
         cur.reset()
         cur.y = 0
         cur.move_y(transformed_namebar.size[1])
-        self.last_action = ""
         print(stats[-1].title)
         for stat in stats:
             if stat.title == "Separator":
@@ -281,6 +277,12 @@ class ItemRender:
                     cur.move_y(self.font.getsize(text)[1])
                     cur.reset()
                     self.last_action = ""
+            elif stat.title == "Image":
+                cur.move_x((stat.text.size[0]//2)*-1)
+                cur.move_y(4)
+                item.alpha_composite(stat.text, cur.pos)
+                cur.move_y(stat.text.size[1])
+                cur.reset()
             else:
                 text = f"{stat.title}{stat.text}"
                 cur.move_y(2 if self.last_action == "Separator" else 4)
