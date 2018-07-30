@@ -9,7 +9,11 @@ from PIL import ImageFont
 from PIL import ImageOps
 from collections import namedtuple
 from io import BytesIO
+from .constants import *
 
+
+# Simple cursor class that lets me handle moving around the image quite well
+# also get around the hassle of maintaining position and adding and subtracting.
 
 class Cursor:
 
@@ -18,6 +22,7 @@ class Cursor:
         self.y = 0
         self.reset_x = reset
 
+    # Return current pos of cursor
     @property
     def pos(self):
         return self.x, self.y
@@ -32,31 +37,37 @@ class Cursor:
         self.y += quant
         print('y moved from ', old_y, ' to ', self.y)
 
+    # Probably should call it reset_x because that's what it does
+    # Reset x
     def reset(self):
         print('x reset to ', self.reset_x)
         self.x = self.reset_x
 
 
+# Cause relative paths are ass
 _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 
 
 class ItemRender:
-    def __init__(self, rarity):
+    def __init__(self, flavor):
         self.font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 15)
+        self.lore_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCapsItalic.ttf', 15)
         self.header_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 20)
-        self.namebar_left = Image.open(f'{_dir}//{rarity}_namebar_left.png')
-        self.namebar_right = Image.open(f'{_dir}//{rarity}_namebar_right.png')
-        self.namebar_trans = Image.open(f'{_dir}//{rarity}_namebar_trans.png')
-        self.separator = Image.open(f'{_dir}//{rarity}_separator.png')
+        self.namebar_left = Image.open(f'{_dir}//{flavor}_namebar_left.png')
+        self.namebar_right = Image.open(f'{_dir}//{flavor}_namebar_right.png')
+        self.namebar_trans = Image.open(f'{_dir}//{flavor}_namebar_trans.png')
+        self.separator = Image.open(f'{_dir}//{flavor}_separator.png')
+
+        # A namedtuple to handle properties.
+        # This works fairly well except for Separators which is kinda hacky
         self.prop = namedtuple('Property', ['title', 'text', 'color'])
+
+        # Gamepedia API will return links decorated with [[]]
+        # at times with singular and plurals as well, re here handles that
         self.re = re.compile(r'\[\[[^\]]+\]\]')
-        self.prop_color = (136, 136, 255)
-        self.ele_color = {'fire': (150, 0, 0),
-                          'cold': (54, 100, 146),
-                          'lightning': (255, 215, 0)}
-        self.prop_chaos = (208, 32, 144)
-        self.unique_color = (175, 96, 37)
-        self.prop_desc = (127, 127, 127)
+
+        # I don't know why PIL does this, but spacing with fonts is not consistent,
+        # this means i have to compensate by spacing more after separators and stuff
         self.last_action = str()
 
     def unescape_to_list(self, props):
@@ -71,39 +82,63 @@ class ItemRender:
         prop_list = html.unescape(props).split('<br>')
         return prop_list
 
+    # Go through our total properties and image to get the image/box size
+    # I feel the code is a bit redundant considering i have to instances
+    # of an if-fest, calc_size and sort_stats.
+    # TODO:
+    # 1. Maybe make less redundant later
     def calc_size(self, stats):
         width = 0
         height = 0
+        last_sep = False
         for stat in stats:
             if stat.title == "Separator":
-                height += 8
+                height += SEPARATOR_HEIGHT + SEPARATOR_SPACING
+                last_sep = True
                 continue
             elif stat.title == "Elemental Damage:":
-                height += 19
+                if last_sep:
+                    height += SEPARATOR_SPACING
+                else:
+                    height += STAT_SPACING
+                height += STAT_HEIGHT
                 stat_text = stat.title
                 for element in stat.text.keys():
                     stat_text += f" {stat.text[element]}"
+                last_sep = False
             elif stat.title == "Requires":
-                height += 19
+                if last_sep:
+                    height += SEPARATOR_SPACING
+                else:
+                    height += STAT_SPACING
+                height += STAT_HEIGHT
                 stat_text = stat.title
                 for attr in stat.text.keys():
                     stat_text += f" {attr.title()} {stat.text[attr]}" \
                                  f"{'' if list(stat.text.keys())[-1] == attr else ','}"
+                last_sep = False
             elif stat.title == "Lore":
-                ht = 4
+                ht = LINE_SPACING
                 for line in stat.text:
                     print(line)
                     w = self.font.getsize(line)
-                    ht += 19
+                    ht += STAT_HEIGHT
                     if w[0] > width:
                         width = w[0]
-                height += ht
+                height += ht + STAT_SPACING
+                last_sep = False
                 continue
             elif stat.title == "Image":
-                height += stat.text.size[1] + 6*2
+                height += stat.text.size[1] + IMAGE_PADDING
+                last_sep = False
             else:
-                height += 19
+                if last_sep:
+                    height += SEPARATOR_SPACING
+                else:
+                    height += STAT_SPACING
+                height += STAT_HEIGHT
                 stat_text = f"{stat.title}{stat.text}"
+                last_sep = False
 
             print(stat_text)
             w = self.font.getsize(stat_text)
@@ -111,17 +146,19 @@ class ItemRender:
                 width = w[0]
 
         # 34 is the 17px padding from both sides
-        return width+34, height+56
+        return width+34, height+self.namebar_trans.size[1]
+
+    #def
 
     def sort_stats(self, item):
         stats = list()
         separator = self.prop("Separator", None, None)
 
         if 'weapon' in item.tags:
-            stats.append(self.prop(item.item_class, '', self.prop_desc))
-            stats.append(self.prop("Quality: ", item.quality, self.prop_color))
+            stats.append(self.prop(item.item_class, '', DESC_COLOR))
+            stats.append(self.prop("Quality: ", item.quality, PROP_COLOR))
             if item.physical_damage:
-                stats.append(self.prop("Physical Damage: ", item.physical_damage, self.prop_color))
+                stats.append(self.prop("Physical Damage: ", item.physical_damage, PROP_COLOR))
             if item.cold_damage or item.fire_damage or item.lightning_damage:
                 # I'd like to do this a bit neater sometime in the future
                 eles = {}
@@ -133,23 +170,23 @@ class ItemRender:
                     eles['lightning'] = item.lightning_damage
                 stats.append(self.prop("Elemental Damage:", eles, None))
             if item.chaos_damage:
-                stats.append(self.prop("Chaos Damage: ", item.chaos_damage, self.prop_chaos))
+                stats.append(self.prop("Chaos Damage: ", item.chaos_damage, CHAOS_COLOR))
             if item.critical_chance:
                 stats.append(self.prop("Critical Strike Chance: ", item.critical_chance, None))
             if item.attack_speed:
-                stats.append(self.prop("Attacks Per Second: ", item.attack_speed, self.prop_color))
+                stats.append(self.prop("Attacks Per Second: ", item.attack_speed, PROP_COLOR))
             stats.append(self.prop("Weapon Range: ", item.range, None))
 
             stats.append(separator)
 
         elif 'armour' in item.tags:
-            stats.append(self.prop("Quality: ", item.quality, self.prop_color))
+            stats.append(self.prop("Quality: ", item.quality, PROP_COLOR))
             if item.armour:
-                stats.append(self.prop("Armour: ", item.armour, self.prop_color))
+                stats.append(self.prop("Armour: ", item.armour, PROP_COLOR))
             if item.evasion:
-                stats.append(self.prop("Evasion: ", item.evasion, self.prop_color))
+                stats.append(self.prop("Evasion: ", item.evasion, PROP_COLOR))
             if item.energy_shield:
-                stats.append(self.prop("Energy Shield: ", item.energy_shield, self.prop_color))
+                stats.append(self.prop("Energy Shield: ", item.energy_shield, PROP_COLOR))
             stats.append(separator)
 
         if item.requirements.has_reqs:
@@ -168,18 +205,18 @@ class ItemRender:
         if item.implicits:
             implicits = self.unescape_to_list(item.implicits)
             for implicit in implicits:
-                stats.append(self.prop(implicit, '', self.prop_color))
+                stats.append(self.prop(implicit, '', PROP_COLOR))
             stats.append(separator)
 
         if item.explicits:
             explicits = self.unescape_to_list(item.explicits)
             for explicit in explicits:
-                stats.append(self.prop(explicit, '', self.prop_color))
+                stats.append(self.prop(explicit, '', PROP_COLOR))
 
         if item.lore:
             if stats[-1] is not separator:
                 stats.append(separator)
-            lore = self.prop('Lore', self.unescape_to_list(item.lore), self.unique_color)
+            lore = self.prop('Lore', self.unescape_to_list(item.lore), UNIQUE_COLOR)
             stats.append(lore)
         if item.icon:
             http = urllib3.PoolManager()
@@ -195,7 +232,7 @@ class ItemRender:
         print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
-        item = ImageOps.expand(item, border=1, fill=self.unique_color)
+        item = ImageOps.expand(item, border=1, fill=UNIQUE_COLOR)
         cur = Cursor(center_x)
         item.paste(self.namebar_left, cur.pos)
         cur.move_x(self.namebar_left.size[0])
@@ -208,11 +245,11 @@ class ItemRender:
         d = ImageDraw.Draw(item)
         cur.move_y(8)
         cur.move_x((self.header_font.getsize(weapon.name)[0]//2)*-1)
-        d.text(cur.pos, weapon.name, fill=self.unique_color, font=self.header_font)
+        d.text(cur.pos, weapon.name, fill=UNIQUE_COLOR, font=self.header_font)
         cur.move_y(2+self.header_font.getsize(weapon.name)[1])
         cur.reset()
         cur.move_x((self.header_font.getsize(weapon.base)[0]//2)*-1)
-        d.text(cur.pos, weapon.base, fill=self.unique_color, font=self.header_font)
+        d.text(cur.pos, weapon.base, fill=UNIQUE_COLOR, font=self.header_font)
         cur.reset()
         cur.y = 0
         cur.move_y(transformed_namebar.size[1])
@@ -222,23 +259,24 @@ class ItemRender:
                 self.last_action = "Separator"
                 print('separator going to start')
                 cur.move_x((self.separator.size[0]//2)*-1)
-                cur.move_y(5)
+                cur.move_y(SEPARATOR_SPACING)
                 item.paste(self.separator, cur.pos)
                 print('separator consumption')
-                cur.move_y(self.separator.size[1])
+                print("sepsize", self.separator.size[1])
+                #cur.move_y(self.separator.size[1])
                 cur.reset()
             elif stat.title == "Elemental Damage:":
                 stat_text = stat.title
                 for element in stat.text.keys():
                     stat_text += f" {stat.text[element]}"
                 cur.move_x((self.font.getsize(stat_text)[0]//2)*-1)
-                cur.move_y(2 if self.last_action == "Separator" else 4)
-                d.text(cur.pos, stat.title, fill=self.prop_desc, font=self.font)
-                cur.move_x(self.font.getsize(stat.title))
+                cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
+                d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
+                cur.move_x(self.font.getsize(stat.title)[0])
                 for element in stat.text.keys():
-                    d.text(cur.pos, f" {stat.text}", fill=self.ele_color[element], font=self.font)
-                    cur.move_x(self.font.getsize(f" {stat.text}")[0])
-                cur.move_y(self.font.getsize(stat.title)[1])
+                    d.text(cur.pos, f" {stat.text[element]}", fill=ELE_COLOR[element], font=self.font)
+                    cur.move_x(self.font.getsize(f" {stat.text[element]}")[0])
+                cur.move_y(STAT_HEIGHT)
                 cur.reset()
                 self.last_action = ""
             elif stat.title == "Requires":
@@ -248,33 +286,35 @@ class ItemRender:
                             f"{'' if list(stat.text.keys())[-1] == attr else ','}"
                 if self.last_action == "Separator":
                     print("last was sep")
-                cur.move_y(2 if self.last_action == "Separator" else 4)
+                cur.move_y(0 if self.last_action == "Separator" else STAT_SPACING)
                 cur.move_x((self.font.getsize(text)[0]//2)*-1)
-                d.text(cur.pos, stat.title, fill=self.prop_desc, font=self.font)
+                d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
                 cur.move_x(self.font.getsize(stat.title)[0])
                 for attr in stat.text.keys():
                     if attr == 'level':
-                        d.text(cur.pos, f" {attr.title()}", fill=self.prop_desc, font=self.font)
+                        d.text(cur.pos, f" {attr.title()}", fill=DESC_COLOR, font=self.font)
                         cur.move_x(self.font.getsize(f" {attr.title()}")[0])
                         attribute_final = f" {stat.text[attr]}"\
                                           f"{'' if list(stat.text.keys())[-1] == attr else ','}"
+                        d.text(cur.pos, attribute_final, font=self.font)
                     else:
-                        d.text(cur.pos, f" {stat.text[attr]}", font=self.font, fill=self.prop_desc)
+                        d.text(cur.pos, f" {stat.text[attr]}", font=self.font)
                         cur.move_x(self.font.getsize(f" {stat.text[attr]}")[0])
                         attribute_final = f" {attr.title()}"\
                                           f"{'' if list(stat.text.keys())[-1] == attr else ','}"
-                    d.text(cur.pos, attribute_final, font=self.font)
+                        d.text(cur.pos, attribute_final, font=self.font, fill=DESC_COLOR)
                     cur.move_x(self.font.getsize(attribute_final)[0])
-                cur.move_y(self.font.getsize(stat.title)[1])
+                cur.move_y(STAT_HEIGHT)
+                print("req", self.font.getsize(stat.title)[1])
                 cur.reset()
                 self.last_action = ""
             elif stat.title == "Lore":
                 for line in stat.text:
                     text = line
-                    cur.move_y(2 if self.last_action == "Separator" else 4)
+                    cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
                     cur.move_x((self.font.getsize(text)[0]//2)*-1)
-                    d.text(cur.pos, text, fill=stat.color, font=self.font)
-                    cur.move_y(self.font.getsize(text)[1])
+                    d.text(cur.pos, text, fill=stat.color, font=self.lore_font)
+                    cur.move_y(self.lore_font.getsize(text)[1])
                     cur.reset()
                     self.last_action = ""
             elif stat.title == "Image":
@@ -285,17 +325,17 @@ class ItemRender:
                 cur.reset()
             else:
                 text = f"{stat.title}{stat.text}"
-                cur.move_y(2 if self.last_action == "Separator" else 4)
+                cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
                 cur.move_x((self.font.getsize(text)[0]//2)*-1)
                 if ':' in stat.title:
                     print(stat.title, cur.pos, stat.color)
-                    d.text(cur.pos, stat.title, fill=self.prop_desc, font=self.font)
+                    d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
                     cur.move_x(self.font.getsize(stat.title)[0])
                     d.text(cur.pos, stat.text, fill=stat.color, font=self.font)
                 else:
                     print(stat.title, cur.pos, stat.color)
                     d.text(cur.pos, stat.title, fill=stat.color, font=self.font)
-                cur.move_y(self.font.getsize(stat.title)[1])
+                cur.move_y(STAT_HEIGHT)
                 cur.reset()
                 self.last_action = ""
 

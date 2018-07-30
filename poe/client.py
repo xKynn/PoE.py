@@ -22,7 +22,7 @@ class Client(ClientBase):
         for key, value in params.items():
             final_url = f"{final_url}&{key}={value.replace(' ', '%20')}"
         r = http.request('GET', final_url)
-        #print(final_url)
+        # print(final_url)
         try:
             resp = json.loads(r.data.decode('utf-8'))
         except (urllib3.exceptions.TimeoutError, urllib3.exceptions.ConnectionError):
@@ -42,7 +42,7 @@ class Client(ClientBase):
         data = self.request_gen(self.base_url, params=params)
         return self.item_list_gen(data, self.request_gen, self.base_url)
 
-    def get_gem(self, where: dict):
+    def get_gems(self, where: dict):
         params = self.gem_param_gen(where)
         data = self.request_gen(self.base_url, params=params)
         result_list = self.extract_cargoquery(data)
@@ -65,6 +65,10 @@ class Client(ClientBase):
             stats_raw = self.request_gen(self.base_url, params=stats_params)
             stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
+            if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
+                aura = True
+            else:
+                aura = False
             for stats_dict in stats_list:
                 stats[int(stats_dict['level'])] = stats_dict
             gem = Gem(gem["skill id"], gem["cast time"], gem["description"],
@@ -74,7 +78,23 @@ class Client(ClientBase):
                       gem["radius secondary description"], gem["radius tertiary"],
                       gem["radius tertiary description"], gem["skill icon"],
                       gem["skill screenshot"], stats,
-                      True if int(gem['has percentage mana cost']) else False,
-                      vendors)
+                      aura, vendors)
             final_list.append(gem)
         return final_list
+
+    def search(self, name: str):
+        search_params = {
+            'tables': 'skill, items',
+            'join_on': 'skill._pageName=items._pageName',
+            'fields': 'items._pageName=name,tags',
+            'where': f'items._pageName%20LIKE%20%22{name}%%22'
+        }
+        results = self.extract_cargoquery(self.request_gen(self.base_url, params=search_params))
+        fetched_results = []
+        print(results)
+        for result in results:
+            if 'gem' in result['tags']:
+                fetched_results.append(self.get_gems({'name': f'{result["name"]}'})[0])
+            elif any(i_type in result['tags'] for i_type in ['ring', 'amulet', 'belt', 'armour']):
+                fetched_results.append(self.get_items({'name': f'{name}%'})[0])
+        return fetched_results
