@@ -50,6 +50,7 @@ _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 
 class ItemRender:
     def __init__(self, flavor):
+        self.flavor = flavor
         self.font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 15)
         self.lore_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCapsItalic.ttf', 15)
         self.header_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 20)
@@ -232,20 +233,30 @@ class ItemRender:
                 for line in description:
                     stats.append(self.prop(' '.join(line), '', GEM_COLOR))
             else:
-                stats.append(item.description, '', GEM_COLOR)
+                stats.append(self.prop(item.description, '', GEM_COLOR))
             stats.append(separator)
             if item.quality_bonus:
                 stats.append(self.prop("Per 1% Quality:", "", DESC_COLOR))
-                stats.append(self.prop(item.quality_bonus, "", PROP_COLOR))
+                if '&lt;br&gt;' in item.quality_bonus:
+                    for bonus in item.quality_bonus.split('&lt;br&gt;'):
+                        stats.append(self.prop(bonus, "", PROP_COLOR))
+                else:
+                    stats.append(self.prop(item.quality_bonus, "", PROP_COLOR))
                 stats.append(separator)
             stat_text = item.stat_text.split("&lt;br&gt;")
             for stat in stat_text:
-                stats.append(self.prop(stat, "", PROP_COLOR))
+                if len(stat.split(' ')) > 7:
+                    st = stat.split(' ')
+                    sep_stat = [st[x:x+7] for x in range(0, len(st),7)]
+                    for sep in sep_stat:
+                        stats.append(self.prop(' '.join(sep), "", PROP_COLOR))
+                else:
+                    stats.append(self.prop(stat, "", PROP_COLOR))
             stats.append(separator)
             stats.append(self.prop("Gem Help", "Place into an item socket of the right", DESC_COLOR))
             stats.append(self.prop("Gem Help", "colour to gain this skill. Right click to", DESC_COLOR))
             stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
-        if 'weapon' in  item.tags or 'armour' in item.tags:
+        if 'gem' not in item.tags:
             if item.implicits:
                 implicits = self.unescape_to_list(item.implicits)
                 for implicit in implicits:
@@ -269,20 +280,22 @@ class ItemRender:
                 im = Image.open(BytesIO(r.read()))
                 im = im.convert('RGBA')
                 return im
-            if item.skill_icon:
-                stats.append(self.prop('Image', ico(item.skill_icon), None))
+            try:
+                if item.skill_icon:
+                    stats.append(self.prop('Image', ico(item.skill_icon), None))
+            except AttributeError:
+                pass
             stats.append(self.prop('Image', ico(item.icon), None))
 
         return stats
 
     def render(self, poe_item):
         stats = self.sort_stats(poe_item)
-        if 'weapon' in poe_item.tags or 'armour' in poe_item.tags:
+        if self.flavor == 'unique':
             fill = UNIQUE_COLOR
         else:
             fill = GEM_COLOR
         box_size = self.calc_size(stats)
-        SEPARATOR_SPACING = 2
         print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
@@ -302,7 +315,7 @@ class ItemRender:
         d.text(cur.pos, poe_item.name, fill=fill, font=self.header_font)
         cur.move_y(2+self.header_font.getsize(poe_item.name)[1])
         cur.reset()
-        if 'weapon' in poe_item.tags or 'armour' in poe_item.tags:
+        if 'gem' not in poe_item.tags:
             cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
             d.text(cur.pos, poe_item.base, fill=UNIQUE_COLOR, font=self.header_font)
             cur.reset()
@@ -314,7 +327,7 @@ class ItemRender:
                 self.last_action = "Separator"
                 print('separator going to start')
                 cur.move_x((self.separator.size[0]//2)*-1)
-                cur.move_y(SEPARATOR_SPACING+1)
+                cur.move_y(SEPARATOR_SPACING+2)
                 item.paste(self.separator, cur.pos)
                 print('separator consumption')
                 print("sepsize", self.separator.size[1])
@@ -375,6 +388,8 @@ class ItemRender:
             elif stat.title == "Image":
                 cur.move_x((stat.text.size[0]//2)*-1)
                 cur.move_y(4)
+                #stat.text.show()
+                #item.show()
                 item.alpha_composite(stat.text, cur.pos)
                 cur.move_y(stat.text.size[1])
                 cur.reset()
