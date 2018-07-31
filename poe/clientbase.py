@@ -5,6 +5,7 @@ import html
 from .models import Item
 from .models import Weapon
 from .models import Armour
+from .models import Gem
 from .models import ItemDrop
 from .models import Requirements
 
@@ -84,7 +85,54 @@ class ClientBase:
         dat = req(query_url, param)
         return dat['query']['pages'][list(dat['query']['pages'].keys())[0]]['imageinfo'][0]['url']
 
-    def item_list_gen(self, data, req=None, url=None):
+    def get_gems(self, where: dict, req, url):
+        params = self.gem_param_gen(where)
+        data = req(url, params=params)
+        result_list = self.extract_cargoquery(data)
+        final_list = []
+        for gem in result_list:
+            vendor_params = {
+                'tables': "vendor_rewards",
+                'fields': "act,classes",
+                'where': f'''reward=%22{gem['name']}%22'''
+            }
+            vendors_raw = req(url, params=vendor_params)
+            vendors = self.extract_cargoquery(vendors_raw)
+            for act in vendors:
+                act['classes'] = act['classes'].replace('�', ', ')
+            stats_params = {
+                'tables': "skill_levels",
+                'fields': ','.join(self.valid_gem_level_filters),
+                'where': f'''_pageName=%22{gem['name']}%22'''
+            }
+            stats_raw = req(url, params=stats_params)
+            stats_list = self.extract_cargoquery(stats_raw)
+            stats = {}
+            print(gem['has percentage mana cost'], gem['has reservation mana cost'])
+            if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
+                aura = True
+            else:
+                aura = False
+            for stats_dict in stats_list:
+                stats[int(stats_dict['level'])] = stats_dict
+            requirements = Requirements(stats[1]['dexterity requirement'], stats[1]['strength requirement'],
+                                        stats[1]['intelligence requirement'], stats[1]['level requirement'])
+            inv_icon = self.get_image_url(gem['inventory icon'], req)
+            if gem['skill icon']:
+                skill_icon = self.get_image_url(gem['skill icon'], req)
+            else:
+                skill_icon = None
+            gem = Gem(gem["skill id"], gem["cast time"], gem["description"],
+                      gem["name"], gem["item class restriction"], gem["stat text"],
+                      gem["quality stat text"], gem["radius"],
+                      gem["radius description"], gem["radius secondary"],
+                      gem["radius secondary description"], gem["radius tertiary"],
+                      gem["radius tertiary description"], skill_icon,
+                      gem["skill screenshot"], inv_icon, gem['gem tags'], gem['tags'], stats,
+                      aura, vendors, requirements)
+            final_list.append(gem)
+        return final_list
+    def item_list_gen(self, data, req=None, url=None, where=None):
         result_list = self.extract_cargoquery(data)
         final_list = []
         for item in result_list:
@@ -106,23 +154,26 @@ class ClientBase:
                 data = req(url, params)
                 stats = self.extract_cargoquery(data)[0]
                 i = Armour
+            elif 'gem' in item['tags']:
+                current_item = self.get_gems({'name': item['name']}, req, url)[0]
             else:
                 stats = None
                 i = Item
             print(item['inventory icon'])
-            image_url = self.get_image_url(item['inventory icon'], req)
-            drops = ItemDrop(item['drop enabled'], item['drop level'],
-                             item['drop level maximum'], item['drop leagues'],
-                             item['drop areas'], item['drop text'])
-            req = Requirements(item['required dexterity'], item['required strength'],
-                               item['required intelligence'], item['required level'])
+            if 'gem' not in item['tags']:
+                image_url = self.get_image_url(item['inventory icon'], req)
+                drops = ItemDrop(item['drop enabled'], item['drop level'],
+                                 item['drop level maximum'], item['drop leagues'],
+                                 item['drop areas'], item['drop text'])
+                requirements = Requirements(item['required dexterity'], item['required strength'],
+                                   item['required intelligence'], item['required level'])
 
-            item = i(item['base item'], item['class'], item['name'],
-                     item['rarity'], (item['size x'], item['size y']), drops, req,
-                     item['flavour text'], item['help text'], self.bool_(item['is corrupted']),
-                     self.bool_(item['is relic']), item['alternate art inventory icons'],
-                     item['quality'], item['implicit stat text'], item['explicit stat text'],
-                     item['tags'], image_url, stats)
+                current_item = i(item['base item'], item['class'], item['name'],
+                                 item['rarity'], (item['size x'], item['size y']), drops, requirements,
+                                 item['flavour text'], item['help text'], self.bool_(item['is corrupted']),
+                                 self.bool_(item['is relic']), item['alternate art inventory icons'],
+                                 item['quality'], item['implicit stat text'], item['explicit stat text'],
+                                 item['tags'], image_url, stats)
 
-            final_list.append(item)
+            final_list.append(current_item)
         return final_list

@@ -15,3 +15,7 @@ CHAOS_COLOR = (208, 32, 144)
 DESC_COLOR = (127, 127, 127)
 PROP_COLOR = (136, 136, 255)
 GEM_COLOR = (26, 162, 155)
+NORMAL_COLOR = (170, 158, 130)
+flavor_color = {"unique": UNIQUE_COLOR,
+                "gem": GEM_COLOR,
+                "normal": NORMAL_COLOR}

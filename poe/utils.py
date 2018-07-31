@@ -142,7 +142,10 @@ class ItemRender:
                 last_sep = False
 
             print(stat_text)
-            w = self.font.getsize(stat_text)
+            if stat.title != "Image":
+                w = self.font.getsize(stat_text)
+            else:
+                w = stat.text.size
             if w[0] > width:
                 width = w[0]
 
@@ -291,15 +294,11 @@ class ItemRender:
 
     def render(self, poe_item):
         stats = self.sort_stats(poe_item)
-        if self.flavor == 'unique':
-            fill = UNIQUE_COLOR
-        else:
-            fill = GEM_COLOR
+        fill = flavor_color[self.flavor]
         box_size = self.calc_size(stats)
         print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
-        item = ImageOps.expand(item, border=1, fill=fill)
         cur = Cursor(center_x)
         item.paste(self.namebar_left, cur.pos)
         cur.move_x(self.namebar_left.size[0])
@@ -424,5 +423,5 @@ class ItemRender:
                 cur.move_y(STAT_HEIGHT)
                 cur.reset()
                 self.last_action = ""
-
+        item = ImageOps.expand(item, border=1, fill=fill)
         item.save('test.png')

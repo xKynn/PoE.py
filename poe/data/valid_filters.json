@@ -4,7 +4,7 @@
            "required_level", "stat_text", "implicit_stat_text", "quality",
            "explicit_stat_text", "is_corrupted", "is_relic", "inventory_icon", "flavour_text",
            "help_text", "drop_areas", "drop_enabled", "drop_level",
-           "drop_level_maximum", "drop_text", "alternate_art_inventory_icons", "tags"],
+           "drop_level_maximum", "drop_text", "alternate_art_inventory_icons", "tags", "stat_text"],
   "weapon": ["attack_speed_range_text", "chaos_damage_min_range_text", "chaos_damage_max_range_text",
              "cold_damage_min_range_text", "cold_damage_max_range_text","fire_damage_min_range_text",
              "fire_damage_max_range_text", "lightning_damage_min_range_text",

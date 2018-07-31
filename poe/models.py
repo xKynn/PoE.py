@@ -29,7 +29,8 @@ class Requirements:
 
 class Item:
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
-                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon, *args):
+                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits,
+                 explicits, tags, icon, *args):
         self.base = base
         self.item_class = item_class
         self.name = name
