@@ -189,6 +189,29 @@ class ItemRender:
                 stats.append(self.prop("Energy Shield: ", item.energy_shield, PROP_COLOR))
             stats.append(separator)
 
+        elif 'gem' in item.tags:
+            stats.append(self.prop(item.gem_tags, '', DESC_COLOR))
+            if item.stats_per_level[0]['mana multiplier']:
+                stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
+            if item.radius:
+                stats.append(self.prop("Radius: ", item.radius, None))
+            if not item.is_aura:
+                stats.append(self.prop("Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})", PROP_COLOR))
+            else:
+                stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
+            if item.stats_per_level[20]['stored uses']:
+                stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
+            if item.stats_per_level[0]['cooldown']:
+                stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
+            if item.cast_time:
+                stats.append(self.prop("Cast Time: ", f"{item.cast_time} sec", None))
+            if item.stats_per_level[0]['critical strike chance']:
+                stats.append(self.prop("Critical Strike Chance: ", f"{item.stats_per_level[0]['critical strike chance']}%", None))
+            if item.stats_per_level[0]['damage effectiveness']:
+                stats.append(self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None))
+            stats.append(separator)
+
+
         if item.requirements.has_reqs:
             reqs = {}
             if item.requirements.level:
@@ -202,41 +225,72 @@ class ItemRender:
             stats.append(self.prop("Requires", reqs, None))
             stats.append(separator)
 
-        if item.implicits:
-            implicits = self.unescape_to_list(item.implicits)
-            for implicit in implicits:
-                stats.append(self.prop(implicit, '', PROP_COLOR))
+        if 'gem' in item.tags:
+            if len(item.description.split(' ')) > 7:
+                desc = item.description.split(' ')
+                description = [desc[x:x+7] for x in range(0, len(desc),7)]
+                for line in description:
+                    stats.append(self.prop(' '.join(line), '', GEM_COLOR))
+            else:
+                stats.append(item.description, '', GEM_COLOR)
             stats.append(separator)
-
-        if item.explicits:
-            explicits = self.unescape_to_list(item.explicits)
-            for explicit in explicits:
-                stats.append(self.prop(explicit, '', PROP_COLOR))
-
-        if item.lore:
-            if stats[-1] is not separator:
+            if item.quality_bonus:
+                stats.append(self.prop("Per 1% Quality:", "", DESC_COLOR))
+                stats.append(self.prop(item.quality_bonus, "", PROP_COLOR))
                 stats.append(separator)
-            lore = self.prop('Lore', self.unescape_to_list(item.lore), UNIQUE_COLOR)
-            stats.append(lore)
+            stat_text = item.stat_text.split("&lt;br&gt;")
+            for stat in stat_text:
+                stats.append(self.prop(stat, "", PROP_COLOR))
+            stats.append(separator)
+            stats.append(self.prop("Gem Help", "Place into an item socket of the right", DESC_COLOR))
+            stats.append(self.prop("Gem Help", "colour to gain this skill. Right click to", DESC_COLOR))
+            stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
+        if 'weapon' in  item.tags or 'armour' in item.tags:
+            if item.implicits:
+                implicits = self.unescape_to_list(item.implicits)
+                for implicit in implicits:
+                    stats.append(self.prop(implicit, '', PROP_COLOR))
+                stats.append(separator)
+
+            if item.explicits:
+                explicits = self.unescape_to_list(item.explicits)
+                for explicit in explicits:
+                    stats.append(self.prop(explicit, '', PROP_COLOR))
+
+            if item.lore:
+                if stats[-1] is not separator:
+                    stats.append(separator)
+                lore = self.prop('Lore', self.unescape_to_list(item.lore), UNIQUE_COLOR)
+                stats.append(lore)
         if item.icon:
             http = urllib3.PoolManager()
-            r = http.request('GET', item.icon, preload_content=False)
-            im = Image.open(BytesIO(r.read()))
-            stats.append(self.prop('Image', im, None))
+            def ico(icon):
+                r = http.request('GET', icon, preload_content=False)
+                im = Image.open(BytesIO(r.read()))
+                im = im.convert('RGBA')
+                return im
+            if item.skill_icon:
+                stats.append(self.prop('Image', ico(item.skill_icon), None))
+            stats.append(self.prop('Image', ico(item.icon), None))
 
         return stats
 
-    def render(self, weapon):
-        stats = self.sort_stats(weapon)
+    def render(self, poe_item):
+        stats = self.sort_stats(poe_item)
+        if 'weapon' in poe_item.tags or 'armour' in poe_item.tags:
+            fill = UNIQUE_COLOR
+        else:
+            fill = GEM_COLOR
         box_size = self.calc_size(stats)
+        SEPARATOR_SPACING = 2
         print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
-        item = ImageOps.expand(item, border=1, fill=UNIQUE_COLOR)
+        item = ImageOps.expand(item, border=1, fill=fill)
         cur = Cursor(center_x)
         item.paste(self.namebar_left, cur.pos)
         cur.move_x(self.namebar_left.size[0])
-        transformed_namebar = self.namebar_trans.resize((box_size[0]-(self.namebar_left.size[0]*2),
+        transformed_namebar = self.namebar_trans.resize((item.size[0]-(self.namebar_left.size[0]*2),
                                                          self.namebar_trans.size[1]))
         item.paste(transformed_namebar, cur.pos)
         cur.move_x(transformed_namebar.size[0])
@@ -244,13 +298,14 @@ class ItemRender:
         cur.reset()
         d = ImageDraw.Draw(item)
         cur.move_y(8)
-        cur.move_x((self.header_font.getsize(weapon.name)[0]//2)*-1)
-        d.text(cur.pos, weapon.name, fill=UNIQUE_COLOR, font=self.header_font)
-        cur.move_y(2+self.header_font.getsize(weapon.name)[1])
+        cur.move_x((self.header_font.getsize(poe_item.name)[0]//2)*-1)
+        d.text(cur.pos, poe_item.name, fill=fill, font=self.header_font)
+        cur.move_y(2+self.header_font.getsize(poe_item.name)[1])
         cur.reset()
-        cur.move_x((self.header_font.getsize(weapon.base)[0]//2)*-1)
-        d.text(cur.pos, weapon.base, fill=UNIQUE_COLOR, font=self.header_font)
-        cur.reset()
+        if 'weapon' in poe_item.tags or 'armour' in poe_item.tags:
+            cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
+            d.text(cur.pos, poe_item.base, fill=UNIQUE_COLOR, font=self.header_font)
+            cur.reset()
         cur.y = 0
         cur.move_y(transformed_namebar.size[1])
         print(stats[-1].title)
@@ -259,7 +314,7 @@ class ItemRender:
                 self.last_action = "Separator"
                 print('separator going to start')
                 cur.move_x((self.separator.size[0]//2)*-1)
-                cur.move_y(SEPARATOR_SPACING)
+                cur.move_y(SEPARATOR_SPACING+1)
                 item.paste(self.separator, cur.pos)
                 print('separator consumption')
                 print("sepsize", self.separator.size[1])
@@ -322,6 +377,22 @@ class ItemRender:
                 cur.move_y(4)
                 item.alpha_composite(stat.text, cur.pos)
                 cur.move_y(stat.text.size[1])
+                cur.reset()
+            elif stat.title == "Stored Uses":
+                text = f"Can Store {stat.text} Use(s)"
+                cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
+                cur.move_x((self.font.getsize(text)[0]//2)*-1)
+                d.text(cur.pos, "Can Store ", fill=DESC_COLOR, font=self.font)
+                cur.move_x(self.font.getsize("Can Store ")[0])
+                d.text(cur.pos, stat.text+ " ", font=self.font)
+                cur.move_x(self.font.getsize(stat.text +" ")[0])
+                d.text(cur.pos, "Use(s)", fill=DESC_COLOR, font=self.font)
+                cur.reset()
+            elif stat.title == "Gem Help":
+                cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
+                cur.move_x((self.font.getsize(stat.text)[0]//2)*-1)
+                d.text(cur.pos, stat.text, fill=DESC_COLOR, font=self.lore_font)
+                cur.move_y(STAT_HEIGHT)
                 cur.reset()
             else:
                 text = f"{stat.title}{stat.text}"

@@ -7,14 +7,13 @@ from .clientbase import ClientBase
 from .exceptions import RequestException
 from .exceptions import NotFoundException
 from .exceptions import ServerException
-from .models import Gem
+from .models import Gem, Requirements
 
 
 class Client(ClientBase):
     def __init__(self, pool: urllib3.PoolManager = None):
         self.pool = pool or urllib3.PoolManager()
         self.base_url = "https://pathofexile.gamepedia.com/api.php?action=cargoquery"
-
     def request_gen(self, url, params=None):
         http = self.pool
         params['format'] = 'json'
@@ -65,20 +64,28 @@ class Client(ClientBase):
             stats_raw = self.request_gen(self.base_url, params=stats_params)
             stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
+            print(gem['has percentage mana cost'], gem['has reservation mana cost'])
             if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
                 aura = True
             else:
                 aura = False
             for stats_dict in stats_list:
                 stats[int(stats_dict['level'])] = stats_dict
+            req = Requirements(stats[1]['dexterity requirement'], stats[1]['strength requirement'],
+                               stats[1]['intelligence requirement'], stats[1]['level requirement'])
+            inv_icon = self.get_image_url(gem['inventory icon'], self.request_gen)
+            if gem['skill icon']:
+                skill_icon = self.get_image_url(gem['skill icon'], self.request_gen)
+            else:
+                skill_icon = None
             gem = Gem(gem["skill id"], gem["cast time"], gem["description"],
                       gem["name"], gem["item class restriction"], gem["stat text"],
                       gem["quality stat text"], gem["radius"],
                       gem["radius description"], gem["radius secondary"],
                       gem["radius secondary description"], gem["radius tertiary"],
-                      gem["radius tertiary description"], gem["skill icon"],
-                      gem["skill screenshot"], stats,
-                      aura, vendors)
+                      gem["radius tertiary description"], skill_icon,
+                      gem["skill screenshot"], inv_icon, gem['gem tags'], gem['tags'], stats,
+                      aura, vendors, req)
             final_list.append(gem)
         return final_list
 

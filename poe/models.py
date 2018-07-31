@@ -127,8 +127,8 @@ class Gem:
     def __init__(self, id, cast_time, description, name, weapon_type_restriction, stat_text,
                  quality_bonus, radius, radius_description,
                  radius_secondary, radius_secondary_description, radius_tertiary,
-                 radius_tertiary_description, skill_icon, skill_screenshot,
-                 stats_per_level, is_aura, vendors):
+                 radius_tertiary_description, skill_icon, skill_screenshot, inventory_icon, gem_tags,
+                 tags, stats_per_level, is_aura, vendors, requirements):
         self.id = id
         self.cast_time = cast_time
         self.description = description
@@ -143,10 +143,14 @@ class Gem:
         self.radius_tertiary = radius_tertiary
         self.radius_tertiary_description = radius_tertiary_description
         self.skill_icon = skill_icon
+        self.icon = inventory_icon
         self.skill_screenshot = skill_screenshot
+        self.gem_tags = gem_tags
+        self.tags = tags
         self.stats_per_level = stats_per_level
         self.is_aura = is_aura
         self.vendors = vendors
+        self.requirements = requirements
 
     def __repr__(self):
         return f"<Gem: name={self.name}>"

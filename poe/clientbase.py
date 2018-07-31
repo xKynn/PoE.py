@@ -57,13 +57,11 @@ class ClientBase:
 
         where_str = self._param_gen(where, self.valid_gem_filters)
         params = {
-            'tables': "skill_levels,skill",
-            'join_on': "skill_levels._pageName=skill._pageName",
-            'fields': f"{','.join(self.valid_gem_filters)},"
-                      "skill_levels._pageName=name".replace(',stat_text', ',skill.stat_text')
-                      .replace('quality_stat_text', 'skill.quality_stat_text'),
+            'tables': "skill_levels,skill,items,skill_gems",
+            'join_on': "skill_levels._pageName=skill._pageName,skill_levels._pageName=items._pageName,skill_levels._pageName=skill_gems._pageName",
+            'fields': f"{','.join(self.valid_gem_filters)},skill_levels._pageName=name,items.inventory_icon, skill_gems.gem_tags, items.tags",
             'where': where_str,
-            'group_by': 'skill_levels._pageName'
+            'group_by': 'name'
         }
         return params
 
@@ -75,6 +73,16 @@ class ClientBase:
             'where': where_str
         }
         return params
+    @staticmethod
+    def get_image_url(filename, req):
+        query_url = "https://pathofexile.gamepedia.com/api.php?action=query"
+        param = {
+                'titles': filename,
+                'prop': 'imageinfo&',
+                'iiprop': 'url'
+            }
+        dat = req(query_url, param)
+        return dat['query']['pages'][list(dat['query']['pages'].keys())[0]]['imageinfo'][0]['url']
 
     def item_list_gen(self, data, req=None, url=None):
         result_list = self.extract_cargoquery(data)
@@ -102,15 +110,7 @@ class ClientBase:
                 stats = None
                 i = Item
             print(item['inventory icon'])
-            query_url = "https://pathofexile.gamepedia.com/api.php?action=query"
-            param = {
-                'titles': item['inventory icon'],
-                'prop': 'imageinfo&',
-                'iiprop': 'url'
-            }
-            dat = req(query_url, param)
-            print(dat)
-            image_url = dat['query']['pages'][list(dat['query']['pages'].keys())[0]]['imageinfo'][0]['url']
+            image_url = self.get_image_url(item['inventory icon'], req)
             drops = ItemDrop(item['drop enabled'], item['drop level'],
                              item['drop level maximum'], item['drop leagues'],
                              item['drop areas'], item['drop text'])
