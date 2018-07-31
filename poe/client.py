@@ -7,7 +7,6 @@ from .clientbase import ClientBase
 from .exceptions import RequestException
 from .exceptions import NotFoundException
 from .exceptions import ServerException
-from .models import Gem, Requirements
 
 
 class Client(ClientBase):

@@ -52,6 +52,15 @@ class Item:
     def __repr__(self):
         return f"<Item: name={self.name} rarity={self.rarity}>"
 
+class Prophecy(Item):
+    def __init__(self, base, item_class, name, rarity, size, drop, requirements,
+                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
+                 proph_data):
+        super().__init__(base, item_class, name, rarity, size, drop, requirements,
+                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon)
+        self.prediction = proph_data['prediction text']
+        self.objective = proph_data['objective']
+        self.seal_cost = proph_data['seal cost']
 
 class Weapon(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
@@ -152,6 +161,7 @@ class Gem:
         self.is_aura = is_aura
         self.vendors = vendors
         self.requirements = requirements
+        self.base = None
 
     def __repr__(self):
         return f"<Gem: name={self.name}>"

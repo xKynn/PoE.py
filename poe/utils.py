@@ -71,7 +71,7 @@ class ItemRender:
         # this means i have to compensate by spacing more after separators and stuff
         self.last_action = str()
 
-    def unescape_to_list(self, props):
+    def unescape_to_list(self, props, ret_matches=False):
         matches = self.re.findall(props)
 
         for match in set(matches):
@@ -81,6 +81,8 @@ class ItemRender:
                 props = props.replace(match, match.strip('[[]]'))
 
         prop_list = html.unescape(props).split('<br>')
+        if ret_matches:
+            return prop_list, matches
         return prop_list
 
     # Go through our total properties and image to get the image/box size
@@ -119,14 +121,17 @@ class ItemRender:
                                  f"{'' if list(stat.text.keys())[-1] == attr else ','}"
                 last_sep = False
             elif stat.title == "Lore":
-                ht = LINE_SPACING
-                for line in stat.text:
-                    print(line)
-                    w = self.font.getsize(line)
-                    ht += STAT_HEIGHT
-                    if w[0] > width:
-                        width = w[0]
-                height += ht + STAT_SPACING
+                if type(stat.text) is list:
+                    ht = LINE_SPACING
+                    for line in stat.text:
+                        print(line)
+                        w = self.font.getsize(line)
+                        ht += STAT_HEIGHT
+                        if w[0] > width:
+                            width = w[0]
+                    height += ht + STAT_SPACING
+                else:
+                    height += STAT_HEIGHT
                 last_sep = False
                 continue
             elif stat.title == "Image":
@@ -150,7 +155,7 @@ class ItemRender:
                 width = w[0]
 
         # 34 is the 17px padding from both sides
-        return width+34, height+self.namebar_trans.size[1]
+        return width+34, height+self.namebar_trans.size[1]+25
 
     #def
 
@@ -194,7 +199,7 @@ class ItemRender:
             stats.append(separator)
 
         elif 'gem' in item.tags:
-            stats.append(self.prop(item.gem_tags, '', DESC_COLOR))
+            stats.append(self.prop(item.gem_tags.replace(',', ', '), '', DESC_COLOR))
             if item.stats_per_level[0]['mana multiplier']:
                 stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
             if item.radius:
@@ -215,8 +220,35 @@ class ItemRender:
                 stats.append(self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None))
             stats.append(separator)
 
+        elif item.base == 'Prophecy':
+            if len(item.lore.split(' ')) > 7:
+                lore = item.lore.split(' ')
+                sep_lore = [lore[x:x+7] for x in range(0, len(lore),7)]
+                for line in sep_lore:
+                    stats.append(self.prop('Lore', ' '.join(line), UNIQUE_COLOR))
+            else:
+                stats.append(self.prop('Lore', item.lore, UNIQUE_COLOR))
+            stats.append(separator)
+            obj_list, matches = self.unescape_to_list(item.objective, ret_matches=True)
+            if 'while holding' in obj_list[0]:
+                itemname = matches[3].split('|')[1].strip(']]')
+                pre_holding = obj_list[0].split(' while holding ')[0]
+                new_obj = f"{pre_holding} while holding {itemname}"
+            else:
+                new_obj = obj_list[0]
+            if len(new_obj.split(' ')) > 7:
+                obj_split = new_obj.split(' ')
+                obj_sep = [obj_split[x:x+7] for x in range(0, len(obj_split),7)]
+                for line in obj_sep:
+                    stats.append(self.prop(' '.join(line), '', None))
+            else:
+                stats.append(self.prop(new_obj, '', None))
+            stats.append(separator)
+            stats.append(self.prop("Seal Cost: ", item.seal_cost, DESC_COLOR))
 
-        if item.requirements.has_reqs:
+
+
+        if item.requirements.has_reqs and item.base != "Prophecy":
             reqs = {}
             if item.requirements.level:
                 reqs['level'] = item.requirements.level
@@ -259,7 +291,7 @@ class ItemRender:
             stats.append(self.prop("Gem Help", "Place into an item socket of the right", DESC_COLOR))
             stats.append(self.prop("Gem Help", "colour to gain this skill. Right click to", DESC_COLOR))
             stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
-        if 'gem' not in item.tags:
+        if 'gem' not in item.tags and item.base != "Prophecy":
             if item.implicits:
                 implicits = self.unescape_to_list(item.implicits)
                 for implicit in implicits:
@@ -314,7 +346,7 @@ class ItemRender:
         d.text(cur.pos, poe_item.name, fill=fill, font=self.header_font)
         cur.move_y(2+self.header_font.getsize(poe_item.name)[1])
         cur.reset()
-        if 'gem' not in poe_item.tags:
+        if 'gem' not in poe_item.tags and poe_item.base != "Prophecy":
             cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
             d.text(cur.pos, poe_item.base, fill=UNIQUE_COLOR, font=self.header_font)
             cur.reset()
@@ -376,14 +408,21 @@ class ItemRender:
                 cur.reset()
                 self.last_action = ""
             elif stat.title == "Lore":
-                for line in stat.text:
-                    text = line
+                if type(stat.text) is list:
+                    for line in stat.text:
+                        text = line
+                        cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
+                        cur.move_x((self.font.getsize(text)[0]//2)*-1)
+                        d.text(cur.pos, text, fill=stat.color, font=self.lore_font)
+                        cur.move_y(self.lore_font.getsize(text)[1])
+                        cur.reset()
+                        self.last_action = ""
+                else:
                     cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
-                    cur.move_x((self.font.getsize(text)[0]//2)*-1)
-                    d.text(cur.pos, text, fill=stat.color, font=self.lore_font)
-                    cur.move_y(self.lore_font.getsize(text)[1])
+                    cur.move_x((self.font.getsize(stat.text)[0] // 2) * -1)
+                    d.text(cur.pos, stat.text, fill=stat.color, font=self.lore_font)
+                    cur.move_y(STAT_HEIGHT)
                     cur.reset()
-                    self.last_action = ""
             elif stat.title == "Image":
                 cur.move_x((stat.text.size[0]//2)*-1)
                 cur.move_y(4)
@@ -406,6 +445,22 @@ class ItemRender:
                 cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
                 cur.move_x((self.font.getsize(stat.text)[0]//2)*-1)
                 d.text(cur.pos, stat.text, fill=DESC_COLOR, font=self.lore_font)
+                cur.move_y(STAT_HEIGHT)
+                cur.reset()
+            elif stat.title == "Seal Cost: ":
+                coin = Image.open(f'{_dir}//silver_coin.png').convert('RGBA')
+                cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
+                cur.move_x((self.font.getsize(stat.title)[0]//2)*-1)
+                d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
+                cur.move_y(STAT_HEIGHT+STAT_SPACING)
+                cur.reset()
+                sealtext = f"{stat.text}X   Silver Coin"
+                cur.move_x((self.font.getsize(sealtext)[0] // 2) * -1)
+                d.text(cur.pos, f"{stat.text}X ", fill=NORMAL_COLOR, font=self.font)
+                cur.move_x(self.font.getsize(f"{stat.text}X ")[0])
+                item.alpha_composite(coin, cur.pos)
+                cur.move_x(coin.size[0]+2)
+                d.text(cur.pos, "Silver Coin", fill=NORMAL_COLOR, font=self.font)
                 cur.move_y(STAT_HEIGHT)
                 cur.reset()
             else:

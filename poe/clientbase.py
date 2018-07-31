@@ -5,6 +5,7 @@ import html
 from .models import Item
 from .models import Weapon
 from .models import Armour
+from .models import Prophecy
 from .models import Gem
 from .models import ItemDrop
 from .models import Requirements
@@ -156,6 +157,15 @@ class ClientBase:
                 i = Armour
             elif 'gem' in item['tags']:
                 current_item = self.get_gems({'name': item['name']}, req, url)[0]
+            elif item['base item'] == "Prophecy":
+                params = {
+                    'tables': 'prophecies',
+                    'fields': 'objective, prediction_text, seal_cost',
+                    'where': f'_pageName="{item["name"]}"'
+                }
+                data = req(url, params)
+                stats = self.extract_cargoquery(data)[0]
+                i = Prophecy
             else:
                 stats = None
                 i = Item
