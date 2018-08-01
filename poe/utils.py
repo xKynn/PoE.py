@@ -554,7 +554,16 @@ def parse_pob_xml(xml: str, cl=None):
         threads = []
         for slot in equipped:
             item_id = equipped[slot]['id']
-            equipped[slot]['raw'] = tree.find(f'Items/Item[@id="{item_id}"]').text.replace('\t', '')
+            tree_item = tree.find(f'Items/Item[@id="{item_id}"]')
+            if 'variant' in tree_item.attrib:
+                lines = tree_item.text.replace('\t','').split('\n')
+                for line in lines[:]:
+                    if line.startswith('{variant'):
+                        variant = line.split('variant:')[1][0]
+                        if variant != tree_item.attrib['variant']:
+                            lines.remove(line)
+                tree_item.text = '\n'.join(lines)
+            equipped[slot]['raw'] = tree_item.text.replace('\t', '')
             #print(equipped[slot]['raw'])
             equipped[slot]['parsed'] = parse_pob_item(equipped[slot]['raw'])
             item = equipped[slot]['parsed']
@@ -565,5 +574,56 @@ def parse_pob_xml(xml: str, cl=None):
             thread.join()
         for slot in obj_dict:
             equipped[slot]['object'] = obj_dict[slot]
+    skill_slots = tree.findall('Skills/Skill')
+    for skill in skill_slots:
+        if skill.attrib['slot'] in equipped:
+            equipped[skill.attrib['slot']]['gems'] = []
+            gems = skill.getchildren()
+            for gem in gems:
+                gem_d = {}
+                gem_d['name'] = gem.attrib['nameSpec']
+                gem_d['level'] = gem.attrib['level']
+                gem_d['enabled'] = gem.attrib['enabled']
+                gem_d['quality'] = gem.attrib['quality']
+                equipped[skill.attrib['slot']]['gems'].append(gem_d)
+    stats = {}
+    active_spec = int(tree.find('Tree').attrib['activeSpec'])-1
+    current_tree = tree.findall('Tree/Spec')[active_spec]
+    stats['trees'] = {}
+    for spec in tree.findall('Tree/Spec'):
+        name = spec.attrib['title'] if 'title' in spec.attrib else 'Default'
+        stats['trees'][name] = spec.find('URL').text.replace('\t', '').replace('\n', '')
+    stats['jewels'] = []
+    jewel_sockets = current_tree.findall('Sockets/Socket')
+    for socket in jewel_sockets:
+        if socket.attrib['itemId'] != "0":
+            item_id = socket.attrib['itemId']
+            parsed = parse_pob_item(tree.find(f'Items/Item[@id="{item_id}"]').text.replace('\t', ''))
+            stats['jewels'].append(parsed)
+    stats['equipped'] = equipped
+    stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
+    stats['level'] = tree.find('Build').attrib['level']
+    stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
+    stats['effective_crit_chance'] = tree.find('Build/PlayerStat[@stat="CritChance"]').attrib['value']
+    stats['chance_to_hit'] = tree.find('Build/PlayerStat[@stat="HitChance"]').attrib['value']
+    stats['str'] = tree.find('Build/PlayerStat[@stat="Str"]').attrib['value']
+    stats['dex'] = tree.find('Build/PlayerStat[@stat="Dex"]').attrib['value']
+    stats['int'] = tree.find('Build/PlayerStat[@stat="Int"]').attrib['value']
+    stats['life'] = tree.find('Build/PlayerStat[@stat="Life"]').attrib['value']
+    stats['life_regen'] = tree.find('Build/PlayerStat[@stat="LifeRegen"]').attrib['value']
+    stats['es_regen'] = tree.find('Build/PlayerStat[@stat="EnergyShieldRegen"]').attrib['value']
+    stats['degen'] = tree.find('Build/PlayerStat[@stat="TotalDegen"]').attrib['value']
+    stats['evasion'] = tree.find('Build/PlayerStat[@stat="Evasion"]').attrib['value']
+    stats['block'] = tree.find('Build/PlayerStat[@stat="BlockChance"]').attrib['value']
+    stats['spell_block'] = tree.find('Build/PlayerStat[@stat="SpellBlockChance"]').attrib['value']
+    stats['attack_dodge'] = tree.find('Build/PlayerStat[@stat="AttackDodgeChance"]').attrib['value']
+    stats['attack_dodge'] = tree.find('Build/PlayerStat[@stat="SpellDodgeChance"]').attrib['value']
+    stats['fire_res'] = tree.find('Build/PlayerStat[@stat="FireResist"]').attrib['value']
+    stats['cold_res'] = tree.find('Build/PlayerStat[@stat="ColdResist"]').attrib['value']
+    stats['light_res'] = tree.find('Build/PlayerStat[@stat="LightningResist"]').attrib['value']
+    stats['chaos_res'] = tree.find('Build/PlayerStat[@stat="ChaosResist"]').attrib['value']
+    stats['power_charges'] = tree.find('Build/PlayerStat[@stat="PowerChargesMax"]').attrib['value']
+    stats['frenzy_charges'] = tree.find('Build/PlayerStat[@stat="FrenzyChargesMax"]').attrib['value']
+    stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
 
-    return equipped
+    return stats

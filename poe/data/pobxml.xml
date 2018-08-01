@@ -772,7 +772,7 @@ Item Level: 77
 +44% to Fire Resistance
 32% reduced Attribute Requirements
 		</Item>
-		<Slot name="Gloves" itemId="10"/>
+		<Slot name="Gloves" itemId="26"/>
 		<Slot name="Weapon 1" itemId="12"/>
 		<Slot name="Flask 1" itemId="15"/>
 		<Slot name="Flask 3" itemId="19"/>
