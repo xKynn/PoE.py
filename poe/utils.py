@@ -1,15 +1,19 @@
 import html
-import re
 import os
-import urllib3
+import re
+import threading
+import xml.etree.cElementTree as ET
+from collections import namedtuple
+from io import BytesIO
 
+import urllib3
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
-from collections import namedtuple
-from io import BytesIO
+
 from .constants import *
+from .models import Item
 
 
 # Simple cursor class that lets me handle moving around the image quite well
@@ -47,43 +51,43 @@ class Cursor:
 # Cause relative paths are ass
 _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 
+# Gamepedia API will return links decorated with [[]]
+# at times with singular and plurals as well, re here handles that
+reg = re.compile(r'\[\[[^\]]+\]\]')
+
+def unescape_to_list(props, ret_matches=False):
+    matches = reg.findall(props)
+
+    for match in set(matches):
+        if '|' in match:
+            props = props.replace(match, match.split('|')[1].strip(']]'))
+        else:
+            props = props.replace(match, match.strip('[[]]'))
+
+    prop_list = html.unescape(props).split('<br>')
+    prop_list = [x.replace('<em class="tc -corrupted">', '').replace('</em>', '') for x in prop_list]
+    if ret_matches:
+        return prop_list, matches
+    return prop_list
 
 class ItemRender:
     def __init__(self, flavor):
-        self.flavor = flavor
+        self.flavor = flavor.lower()
         self.font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 15)
         self.lore_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCapsItalic.ttf', 15)
         self.header_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 20)
-        self.namebar_left = Image.open(f'{_dir}//{flavor}_namebar_left.png')
-        self.namebar_right = Image.open(f'{_dir}//{flavor}_namebar_right.png')
-        self.namebar_trans = Image.open(f'{_dir}//{flavor}_namebar_trans.png')
-        self.separator = Image.open(f'{_dir}//{flavor}_separator.png')
+        self.namebar_left = Image.open(f'{_dir}//{self.flavor}_namebar_left.png')
+        self.namebar_right = Image.open(f'{_dir}//{self.flavor}_namebar_right.png')
+        self.namebar_trans = Image.open(f'{_dir}//{self.flavor}_namebar_trans.png')
+        self.separator = Image.open(f'{_dir}//{self.flavor}_separator.png')
 
         # A namedtuple to handle properties.
         # This works fairly well except for Separators which is kinda hacky
         self.prop = namedtuple('Property', ['title', 'text', 'color'])
 
-        # Gamepedia API will return links decorated with [[]]
-        # at times with singular and plurals as well, re here handles that
-        self.re = re.compile(r'\[\[[^\]]+\]\]')
-
         # I don't know why PIL does this, but spacing with fonts is not consistent,
         # this means i have to compensate by spacing more after separators and stuff
         self.last_action = str()
-
-    def unescape_to_list(self, props, ret_matches=False):
-        matches = self.re.findall(props)
-
-        for match in set(matches):
-            if '|' in match:
-                props = props.replace(match, match.split('|')[1].strip(']]'))
-            else:
-                props = props.replace(match, match.strip('[[]]'))
-
-        prop_list = html.unescape(props).split('<br>')
-        if ret_matches:
-            return prop_list, matches
-        return prop_list
 
     # Go through our total properties and image to get the image/box size
     # I feel the code is a bit redundant considering i have to instances
@@ -229,7 +233,7 @@ class ItemRender:
             else:
                 stats.append(self.prop('Lore', item.lore, UNIQUE_COLOR))
             stats.append(separator)
-            obj_list, matches = self.unescape_to_list(item.objective, ret_matches=True)
+            obj_list, matches = unescape_to_list(item.objective, ret_matches=True)
             if 'while holding' in obj_list[0]:
                 itemname = matches[3].split('|')[1].strip(']]')
                 pre_holding = obj_list[0].split(' while holding ')[0]
@@ -293,20 +297,23 @@ class ItemRender:
             stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
         if 'gem' not in item.tags and item.base != "Prophecy":
             if item.implicits:
-                implicits = self.unescape_to_list(item.implicits)
+                implicits = unescape_to_list(item.implicits)
                 for implicit in implicits:
                     stats.append(self.prop(implicit, '', PROP_COLOR))
                 stats.append(separator)
 
             if item.explicits:
-                explicits = self.unescape_to_list(item.explicits)
+                explicits = unescape_to_list(item.explicits)
                 for explicit in explicits:
-                    stats.append(self.prop(explicit, '', PROP_COLOR))
+                    if explicit.lower() == "corrupted":
+                        stats.append(self.prop(explicit, '', CORRUPTED))
+                    else:
+                        stats.append(self.prop(explicit, '', PROP_COLOR))
 
             if item.lore:
                 if stats[-1] is not separator:
                     stats.append(separator)
-                lore = self.prop('Lore', self.unescape_to_list(item.lore), UNIQUE_COLOR)
+                lore = self.prop('Lore', unescape_to_list(item.lore), UNIQUE_COLOR)
                 stats.append(lore)
         if item.icon:
             http = urllib3.PoolManager()
@@ -348,7 +355,7 @@ class ItemRender:
         cur.reset()
         if 'gem' not in poe_item.tags and poe_item.base != "Prophecy":
             cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
-            d.text(cur.pos, poe_item.base, fill=UNIQUE_COLOR, font=self.header_font)
+            d.text(cur.pos, poe_item.base, fill=fill, font=self.header_font)
             cur.reset()
         cur.y = 0
         cur.move_y(transformed_namebar.size[1])
@@ -480,3 +487,83 @@ class ItemRender:
                 self.last_action = ""
         item = ImageOps.expand(item, border=1, fill=fill)
         item.save('test.png')
+
+
+def parse_pob_item(itemtext):
+    item = itemtext.split('\n')
+    pobitem = {}
+    for index, line in enumerate(item):
+        if line.startswith("Rarity"):
+            pobitem['rarity'] = line.split(' ')[1].title()
+            pobitem['rarity_index'] = index
+            continue
+        elif line.startswith("Item Level"):
+            pobitem['statstart_index'] = index+3
+        elif line.startswith("====="):
+            pobitem['statstart_index'] = index
+        elif line.startswith("Implicits:"):
+            pobitem['statstart_index'] = index
+        elif line.startswith("Requires"):
+            pobitem['statstart_index'] = index
+    if pobitem['rarity'].lower() in ['unique', 'rare']:
+        name = item[pobitem['rarity_index']+1]
+        base = item[pobitem['rarity_index']+2]
+    elif pobitem['rarity'].lower() == 'magic':
+        name = item[pobitem['rarity_index']+1]
+        base = ' '.join(name.split(' ')[1:-2])
+    else:
+        name = item[pobitem['rarity_index'] + 1]
+        base = item[pobitem['rarity_index'] + 1]
+    stat_text = item[pobitem['statstart_index']+1:]
+    return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity']}
+
+def _get_wiki_base(item, object_dict, cl, slot):
+    if item['rarity'].lower() == 'unique':
+        wiki_base = cl.find_items({'name': item['name']})[0]
+    else:
+        wiki_base = cl.find_items({'name': item['base']})[0]
+    if item['rarity'].lower() != 'unique':
+        if wiki_base.implicits:
+            implicits_list = unescape_to_list(wiki_base.implicits)
+            implicits_list = [' '.join(x.split(' ')[1:]) for x in implicits_list]
+            for implicit in implicits_list:
+                for pob_implicit in item['stats'][:2]:
+                    if implicit in pob_implicit:
+                        item['stats'].remove(pob_implicit)
+        wiki_base.explicits = '&lt;br&gt;'.join(item['stats'])
+        wiki_base.rarity = item['rarity']
+        wiki_base.name = item['name']
+        wiki_base.base = item['base']
+    else:
+        if wiki_base.implicits:
+            pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
+            wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
+    object_dict[slot] = wiki_base
+
+def parse_pob_xml(xml: str, cl=None):
+    tree = ET.ElementTree(ET.fromstring(xml))
+    equipped = {}
+    slots = tree.findall('Items/Slot')
+    for slot in slots:
+        if 'socket' in slot.attrib['name'].lower():
+            continue
+        equipped[slot.attrib['name']] = {}
+        equipped[slot.attrib['name']]['id'] = slot.attrib['itemId']
+    if cl:
+        obj_dict = {}
+        threads = []
+        for slot in equipped:
+            item_id = equipped[slot]['id']
+            equipped[slot]['raw'] = tree.find(f'Items/Item[@id="{item_id}"]').text.replace('\t', '')
+            #print(equipped[slot]['raw'])
+            equipped[slot]['parsed'] = parse_pob_item(equipped[slot]['raw'])
+            item = equipped[slot]['parsed']
+            t = threading.Thread(target=_get_wiki_base, args=(item, obj_dict, cl, slot))
+            threads.append(t)
+            t.start()
+        for thread in threads:
+            thread.join()
+        for slot in obj_dict:
+            equipped[slot]['object'] = obj_dict[slot]
+
+    return equipped

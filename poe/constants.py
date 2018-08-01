@@ -16,8 +16,11 @@ DESC_COLOR = (127, 127, 127)
 PROP_COLOR = (136, 136, 255)
 GEM_COLOR = (26, 162, 155)
 NORMAL_COLOR = (170, 158, 130)
+RARE_COLOR = (255, 255, 119)
 PROPH_COLOR = (181, 75, 255)
+CORRUPTED = (210, 0, 0)
 flavor_color = {"unique": UNIQUE_COLOR,
                 "gem": GEM_COLOR,
                 "normal": NORMAL_COLOR,
-                "prophecy": PROPH_COLOR}
+                "prophecy": PROPH_COLOR,
+                "rare": RARE_COLOR}

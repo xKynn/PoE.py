@@ -109,7 +109,7 @@ class ClientBase:
             stats_raw = req(url, params=stats_params)
             stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
-            print(gem['has percentage mana cost'], gem['has reservation mana cost'])
+            #print(gem['has percentage mana cost'], gem['has reservation mana cost'])
             if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
                 aura = True
             else:
@@ -169,7 +169,7 @@ class ClientBase:
             else:
                 stats = None
                 i = Item
-            print(item['inventory icon'])
+            #print(item['inventory icon'])
             if 'gem' not in item['tags']:
                 image_url = self.get_image_url(item['inventory icon'], req)
                 drops = ItemDrop(item['drop enabled'], item['drop level'],
