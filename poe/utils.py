@@ -1,3 +1,4 @@
+import binascii
 import html
 import os
 import re
@@ -34,17 +35,17 @@ class Cursor:
     def move_x(self, quant):
         old_x = self.x
         self.x += quant
-        print('x moved from ', old_x, ' to ', self.x)
+        #print('x moved from ', old_x, ' to ', self.x)
 
     def move_y(self, quant):
         old_y = self.y
         self.y += quant
-        print('y moved from ', old_y, ' to ', self.y)
+        #print('y moved from ', old_y, ' to ', self.y)
 
     # Probably should call it reset_x because that's what it does
     # Reset x
     def reset(self):
-        print('x reset to ', self.reset_x)
+        #print('x reset to ', self.reset_x)
         self.x = self.reset_x
 
 
@@ -128,7 +129,7 @@ class ItemRender:
                 if type(stat.text) is list:
                     ht = LINE_SPACING
                     for line in stat.text:
-                        print(line)
+                        #print(line)
                         w = self.font.getsize(line)
                         ht += STAT_HEIGHT
                         if w[0] > width:
@@ -150,7 +151,7 @@ class ItemRender:
                 stat_text = f"{stat.title}{stat.text}"
                 last_sep = False
 
-            print(stat_text)
+            #print(stat_text)
             if stat.title != "Image":
                 w = self.font.getsize(stat_text)
             else:
@@ -335,7 +336,7 @@ class ItemRender:
         stats = self.sort_stats(poe_item)
         fill = flavor_color[self.flavor]
         box_size = self.calc_size(stats)
-        print('box size=', box_size, 'center', box_size[0]//2)
+        #print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
         cur = Cursor(center_x)
@@ -359,16 +360,16 @@ class ItemRender:
             cur.reset()
         cur.y = 0
         cur.move_y(transformed_namebar.size[1])
-        print(stats[-1].title)
+        #print(stats[-1].title)
         for stat in stats:
             if stat.title == "Separator":
                 self.last_action = "Separator"
-                print('separator going to start')
+                #print('separator going to start')
                 cur.move_x((self.separator.size[0]//2)*-1)
                 cur.move_y(SEPARATOR_SPACING+2)
                 item.paste(self.separator, cur.pos)
-                print('separator consumption')
-                print("sepsize", self.separator.size[1])
+                #print('separator consumption')
+                #print("sepsize", self.separator.size[1])
                 #cur.move_y(self.separator.size[1])
                 cur.reset()
             elif stat.title == "Elemental Damage:":
@@ -390,8 +391,6 @@ class ItemRender:
                 for attr in stat.text.keys():
                     text += f" {attr.title()} {stat.text[attr]}" \
                             f"{'' if list(stat.text.keys())[-1] == attr else ','}"
-                if self.last_action == "Separator":
-                    print("last was sep")
                 cur.move_y(0 if self.last_action == "Separator" else STAT_SPACING)
                 cur.move_x((self.font.getsize(text)[0]//2)*-1)
                 d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
@@ -411,7 +410,7 @@ class ItemRender:
                         d.text(cur.pos, attribute_final, font=self.font, fill=DESC_COLOR)
                     cur.move_x(self.font.getsize(attribute_final)[0])
                 cur.move_y(STAT_HEIGHT)
-                print("req", self.font.getsize(stat.title)[1])
+                #print("req", self.font.getsize(stat.title)[1])
                 cur.reset()
                 self.last_action = ""
             elif stat.title == "Lore":
@@ -475,18 +474,18 @@ class ItemRender:
                 cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
                 cur.move_x((self.font.getsize(text)[0]//2)*-1)
                 if ':' in stat.title:
-                    print(stat.title, cur.pos, stat.color)
+                    #print(stat.title, cur.pos, stat.color)
                     d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
                     cur.move_x(self.font.getsize(stat.title)[0])
                     d.text(cur.pos, stat.text, fill=stat.color, font=self.font)
                 else:
-                    print(stat.title, cur.pos, stat.color)
+                    #print(stat.title, cur.pos, stat.color)
                     d.text(cur.pos, stat.title, fill=stat.color, font=self.font)
                 cur.move_y(STAT_HEIGHT)
                 cur.reset()
                 self.last_action = ""
         item = ImageOps.expand(item, border=1, fill=fill)
-        item.save('test.png')
+        return item
 
 
 def parse_pob_item(itemtext):
@@ -517,11 +516,22 @@ def parse_pob_item(itemtext):
     stat_text = item[pobitem['statstart_index']+1:]
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity']}
 
-def _get_wiki_base(item, object_dict, cl, slot):
+def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     if item['rarity'].lower() == 'unique':
         wiki_base = cl.find_items({'name': item['name']})[0]
     else:
+        #print("base", item['base'])
         wiki_base = cl.find_items({'name': item['base']})[0]
+        wiki_base.rarity = item['rarity']
+        wiki_base.name = item['name']
+        wiki_base.base = item['base']
+    if char_api:
+        if item['implicits']:
+            wiki_base.implicits = '&lt;br&gt;'.join(item['implicits'])
+        if item['explicits']:
+            wiki_base.explicits = '&lt;br&gt;'.join(item['explicits'])
+        object_dict[slot] = wiki_base
+        return
     if item['rarity'].lower() != 'unique':
         if wiki_base.implicits:
             implicits_list = unescape_to_list(wiki_base.implicits)
@@ -531,9 +541,6 @@ def _get_wiki_base(item, object_dict, cl, slot):
                     if implicit in pob_implicit:
                         item['stats'].remove(pob_implicit)
         wiki_base.explicits = '&lt;br&gt;'.join(item['stats'])
-        wiki_base.rarity = item['rarity']
-        wiki_base.name = item['name']
-        wiki_base.base = item['base']
     else:
         if wiki_base.implicits:
             pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
@@ -564,7 +571,7 @@ def parse_pob_xml(xml: str, cl=None):
                             lines.remove(line)
                 tree_item.text = '\n'.join(lines)
             equipped[slot]['raw'] = tree_item.text.replace('\t', '')
-            #print(equipped[slot]['raw'])
+            ##print(equipped[slot]['raw'])
             equipped[slot]['parsed'] = parse_pob_item(equipped[slot]['raw'])
             item = equipped[slot]['parsed']
             t = threading.Thread(target=_get_wiki_base, args=(item, obj_dict, cl, slot))
@@ -627,3 +634,147 @@ def parse_pob_xml(xml: str, cl=None):
     stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
 
     return stats
+
+def parse_poe_char_api(json, cl):
+    rarity = {0: "Normal",
+              1: "Magic",
+              2: "Rare",
+              3: "Unique",
+              4: "Gem"}
+    equipped = {}
+    threads = []
+    obj_dict = {}
+    for item in json['items']:
+        char_item = {}
+        char_item['rarity'] = rarity[item['frameType']]
+        char_item['name'] = item["name"].split('>>')[-1]
+        ##print(char_item['name'], item['category'])
+        char_item['base'] = item["typeLine"]
+        if 'Ring' in item['inventoryId']:
+            slot = "Ring 2" if "2" in item['inventoryId'] else "Ring 1"
+        elif item['inventoryId'] == "Offhand":
+            slot = "Weapon 2"
+        elif item['inventoryId'] == "BodyArmour":
+            slot = "Body Armour"
+        elif item['inventoryId'] == "Flask":
+            slot = f"Flask {int(item['x'])+1}"
+            char_item['name'] = item["typeLine"].split('>>')[-1]
+            if item['frameType'] == 1 and 'Flask of' in char_item['name']:
+                char_item['rarity'] = "Magic"
+        elif item['inventoryId'] in ['Amulet', 'Helm', 'Gloves', 'Belt', 'Flask', 'Boots', 'Weapon',
+                                                 'PassiveJewels']:
+            slot = item['inventoryId']
+        else:
+            continue
+        if 'implicitMods' in item:
+            char_item['implicits'] = item['implicitMods']
+        else:
+            char_item['implicits'] = []
+        if 'explicitMods' in item:
+            char_item['explicits'] = item['explicitMods']
+        else:
+            char_item['explicits'] = []
+        equipped[slot] = {}
+        if 'socketedItems' in item:
+            equipped[slot]['gems'] = []
+            for socketed in item['socketedItems']:
+                if socketed['frameType'] == 4:
+                    gem_d = {}
+                    gem_d['name'] = socketed['typeLine']
+                    for prop in socketed['properties']:
+                        if prop['name'] == 'Quality':
+                            gem_d['quality'] = prop['values'][0][0].replace('+', '').replace('%', '')
+                        elif prop['name'] == 'Level':
+                            gem_d['level'] = prop['values'][0][0]
+                    equipped[slot]['gems'].append(gem_d)
+        if slot == 'PassiveJewels':
+            if slot not in equipped:
+                equipped[slot] = []
+            equipped[slot].append(char_item)
+        else:
+            equipped[slot] = char_item
+        if slot != 'PassiveJewels' and 'Flask' not in slot:
+            t = threading.Thread(target=_get_wiki_base, args=(char_item, obj_dict, cl, slot, True))
+            threads.append(t)
+            t.start()
+    for thread in threads:
+        thread.join()
+    for slot in obj_dict:
+        equipped[slot]['object'] = obj_dict[slot]
+    stats = {'equipped': equipped}
+    if 'character' in json:
+        stats['level'] = json['character']['level']
+        stats['ascendancy'] = json['character']['ascendancyClass']
+        stats['class'] = json['character']['class']
+        stats['charname'] = json['character']['name']
+        stats['league'] = json['character']['league']
+    return stats
+
+def poe_skill_tree(hashes, char_class: str, ascendancy: str = "None"):
+    char = {
+        "marauder": 1,
+        "ranger": 2,
+        "witch": 3,
+        "duelist": 4,
+        "templar": 5,
+        "shadow": 6,
+        "scion": 7
+    }
+    ascendancy_bytes = {
+        "marauder": {
+            "None": 0,
+            "juggernaut": 1,
+            "berserker": 2,
+            "chieftain": 3
+        },
+        "ranger":  {
+            "None": 0,
+            "raider": 1,
+            "deadeye": 2,
+            "pathfinder": 3
+        },
+        "witch": {
+            "None": 0,
+            "occultist": 1,
+            "elementalist": 2,
+            "necromancer": 3
+        },
+        "duelist": {
+            "None": 0,
+            "slayer": 1,
+            "gladiator": 2,
+            "champion": 3
+        },
+        "templar": {
+            "None": 0,
+            "inquisitor": 1,
+            "heirophant": 2,
+            "guardian": 3
+        },
+        "shadow": {
+            "None": 0,
+            "assassin": 1,
+            "trickster": 2,
+            "saboteur": 3
+        },
+        "scion": {
+            "None": 0,
+            "ascendant": 1
+        }
+    }
+    # This took me a real assload of time to figure out
+    # Either the 4th only or the first 4 bytes represent tree/b64 format version on poe side
+    # 5th and 6th byte are character class and ascendancy respectively
+    # Not sure if 7th byte should inherently be 0, but i think its related to start/exit nodes
+    ba = bytearray()
+    ba += bytes([0])
+    ba += bytes([0])
+    ba += bytes([0])
+    ba += bytes([4])
+    ba += bytes([char[char_class]])
+    ba += bytes([ascendancy_bytes[char_class][ascendancy]])
+    ba += bytes([0])
+    for hash in hashes:
+        ba += hash.to_bytes(2, 'big')
+    post = binascii.b2a_base64(ba).decode().replace('+', '-').replace('/', '_')
+    return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}"
