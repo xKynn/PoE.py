@@ -1,21 +1,21 @@
 from setuptools import setup
 
+with open("README.md") as f:
+    desc = f.read()
+
 setup(
     name="PoE.py",
-    packages=['PoE.py'],
-    version="0.0.1a",
-    description="",
+    packages=['poe'],   
+    include_package_data=True,
+    version="1.0a",
+    description="A Path of Exile wrapper/lib that supports multitudes of filters to list and render items as PNGs and retreive useful character data.",
+    long_description=desc,
+    long_description_content_type="text/markdown",    
     author="xKynn",
     author_email="xkynn@github.com",
-    url="https://github.com/xKynn/PyBattlerite",
-    download_url="",
-    keywords=[],
-    classifiers=[],
-    install_requires=[
-        "aiohttp",
-        "requests"
-    ],
-    python_requires='>=3.5',
-    package_data={
-    }
+    url="https://github.com/xKynn/PoE.py",
+    classifiers=(
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ),
 )
