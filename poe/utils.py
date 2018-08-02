@@ -1,5 +1,6 @@
 import binascii
 import html
+import json as js
 import os
 import re
 import threading
@@ -55,6 +56,10 @@ _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 # Gamepedia API will return links decorated with [[]]
 # at times with singular and plurals as well, re here handles that
 reg = re.compile(r'\[\[[^\]]+\]\]')
+
+with open(f"{_dir}/keystones.json") as f:
+    keystones = js.load(f)
+
 
 def unescape_to_list(props, ret_matches=False):
     matches = reg.findall(props)
@@ -596,6 +601,18 @@ def parse_pob_xml(xml: str, cl=None):
     stats = {}
     active_spec = int(tree.find('Tree').attrib['activeSpec'])-1
     current_tree = tree.findall('Tree/Spec')[active_spec]
+    tree_base64 = current_tree.find('URL').text.replace('\t', '').replace('\n', '').rsplit('/', 1)[1]
+    byte_tree = binascii.a2b_base64(tree_base64.replace('-', '+').replace('_', '/'))
+    pos = 7
+    total_nodes = (len(byte_tree)-7)//2
+    nodes = []
+    for _ in range(total_nodes):
+        nodes.append(str(int.from_bytes(byte_tree[pos:pos+2], byteorder='big')))
+        pos += 2
+    stats['keystones'] = []
+    for node in nodes:
+        if node in keystones:
+            stats['keystones'].append(keystones[node])
     stats['trees'] = {}
     for spec in tree.findall('Tree/Spec'):
         name = spec.attrib['title'] if 'title' in spec.attrib else 'Default'
@@ -710,7 +727,8 @@ def parse_poe_char_api(json, cl):
         stats['league'] = json['character']['league']
     return stats
 
-def poe_skill_tree(hashes, char_class: str, ascendancy: str = "None"):
+def poe_skill_tree(hashes, char_class: str, ascendancy: str = "None",
+                   return_keystones=False):
     char = {
         "marauder": 1,
         "ranger": 2,
@@ -777,4 +795,11 @@ def poe_skill_tree(hashes, char_class: str, ascendancy: str = "None"):
     for hash in hashes:
         ba += hash.to_bytes(2, 'big')
     post = binascii.b2a_base64(ba).decode().replace('+', '-').replace('/', '_')
+    keystones = []
+    if return_keystones:
+        for hash in hashes:
+            if str(hash) in keystones:
+                keystones.append(keystones[hash])
+        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", keystones
+
     return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}"
