@@ -71,6 +71,8 @@ def unescape_to_list(props, ret_matches=False):
             props = props.replace(match, match.strip('[[]]'))
 
     prop_list = html.unescape(props).split('<br>')
+    if len(prop_list==1):
+        prop_list = html.unescape(props).split('<br />')
     prop_list = [x.replace('<em class="tc -corrupted">', '').replace('</em>', '') for x in prop_list]
     if ret_matches:
         return prop_list, matches
@@ -514,7 +516,8 @@ def parse_pob_item(itemtext):
         base = item[pobitem['rarity_index']+2]
     elif pobitem['rarity'].lower() == 'magic':
         name = item[pobitem['rarity_index']+1]
-        base = ' '.join(name.split(' ')[1:-2])
+        n = name[:name.find('of')-1]
+        base = ' '.join(n.split(' ')[1:])
     else:
         name = item[pobitem['rarity_index'] + 1]
         base = item[pobitem['rarity_index'] + 1]
@@ -526,7 +529,10 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
         wiki_base = cl.find_items({'name': item['name']})[0]
     else:
         #print("base", item['base'])
-        wiki_base = cl.find_items({'name': item['base']})[0]
+        try:
+            wiki_base = cl.find_items({'name': item['base']})[0]
+        except:
+            print(item)
         wiki_base.rarity = item['rarity']
         wiki_base.name = item['name']
         wiki_base.base = item['base']
@@ -588,16 +594,24 @@ def parse_pob_xml(xml: str, cl=None):
             equipped[slot]['object'] = obj_dict[slot]
     skill_slots = tree.findall('Skills/Skill')
     for skill in skill_slots:
-        if skill.attrib['slot'] in equipped:
-            equipped[skill.attrib['slot']]['gems'] = []
-            gems = skill.getchildren()
-            for gem in gems:
-                gem_d = {}
-                gem_d['name'] = gem.attrib['nameSpec']
-                gem_d['level'] = gem.attrib['level']
-                gem_d['enabled'] = gem.attrib['enabled']
-                gem_d['quality'] = gem.attrib['quality']
-                equipped[skill.attrib['slot']]['gems'].append(gem_d)
+        if 'slot' in skill.attrib:
+            slot = skill.attrib['slot']
+            equipped[slot]['gems'] = []
+            lst = equipped[slot]['gems']
+        else:
+            if not 'gem_groups' in equipped:
+                equipped['gem_groups'] = {}
+            if not skill.getchildren()[0].attrib['nameSpec'] in equipped['gem_groups']:
+                equipped['gem_groups'][skill.getchildren()[0].attrib['nameSpec']] = []
+            lst = equipped['gem_groups'][skill.getchildren()[0].attrib['nameSpec']]
+        gems = skill.getchildren()
+        for gem in gems:
+            gem_d = {}
+            gem_d['name'] = gem.attrib['nameSpec']
+            gem_d['level'] = gem.attrib['level']
+            gem_d['enabled'] = gem.attrib['enabled']
+            gem_d['quality'] = gem.attrib['quality']
+            lst.append(gem_d)
     stats = {}
     active_spec = int(tree.find('Tree').attrib['activeSpec'])-1
     current_tree = tree.findall('Tree/Spec')[active_spec]
@@ -625,6 +639,9 @@ def parse_pob_xml(xml: str, cl=None):
             parsed = parse_pob_item(tree.find(f'Items/Item[@id="{item_id}"]').text.replace('\t', ''))
             stats['jewels'].append(parsed)
     stats['equipped'] = equipped
+    stats['bandit'] = tree.find('Build').attrib['bandit']
+    stats['class'] = tree.find('Build').attrib['className']
+    stats['ascendancy'] = tree.find('Build').attrib['ascendClassName']
     stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
     stats['level'] = tree.find('Build').attrib['level']
     stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
@@ -635,13 +652,17 @@ def parse_pob_xml(xml: str, cl=None):
     stats['int'] = tree.find('Build/PlayerStat[@stat="Int"]').attrib['value']
     stats['life'] = tree.find('Build/PlayerStat[@stat="Life"]').attrib['value']
     stats['life_regen'] = tree.find('Build/PlayerStat[@stat="LifeRegen"]').attrib['value']
+    stats['es'] = tree.find('Build/PlayerStat[@stat="EnergyShield"]').attrib['value']
     stats['es_regen'] = tree.find('Build/PlayerStat[@stat="EnergyShieldRegen"]').attrib['value']
-    stats['degen'] = tree.find('Build/PlayerStat[@stat="TotalDegen"]').attrib['value']
+    try:
+        stats['degen'] = tree.find('Build/PlayerStat[@stat="TotalDegen"]').attrib['value']
+    except AttributeError:
+        stats['degen'] = "0"
     stats['evasion'] = tree.find('Build/PlayerStat[@stat="Evasion"]').attrib['value']
     stats['block'] = tree.find('Build/PlayerStat[@stat="BlockChance"]').attrib['value']
     stats['spell_block'] = tree.find('Build/PlayerStat[@stat="SpellBlockChance"]').attrib['value']
-    stats['attack_dodge'] = tree.find('Build/PlayerStat[@stat="AttackDodgeChance"]').attrib['value']
-    stats['attack_dodge'] = tree.find('Build/PlayerStat[@stat="SpellDodgeChance"]').attrib['value']
+    stats['dodge'] = tree.find('Build/PlayerStat[@stat="AttackDodgeChance"]').attrib['value']
+    stats['spell_dodge'] = tree.find('Build/PlayerStat[@stat="SpellDodgeChance"]').attrib['value']
     stats['fire_res'] = tree.find('Build/PlayerStat[@stat="FireResist"]').attrib['value']
     stats['cold_res'] = tree.find('Build/PlayerStat[@stat="ColdResist"]').attrib['value']
     stats['light_res'] = tree.find('Build/PlayerStat[@stat="LightningResist"]').attrib['value']
