@@ -70,9 +70,7 @@ def unescape_to_list(props, ret_matches=False):
         else:
             props = props.replace(match, match.strip('[[]]'))
 
-    prop_list = html.unescape(props).split('<br>')
-    if len(prop_list==1):
-        prop_list = html.unescape(props).split('<br />')
+    prop_list = html.unescape(props).replace('<br />', '<br>').split('<br>')
     prop_list = [x.replace('<em class="tc -corrupted">', '').replace('</em>', '') for x in prop_list]
     if ret_matches:
         return prop_list, matches
