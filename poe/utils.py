@@ -60,6 +60,8 @@ reg = re.compile(r'\[\[[^\]]+\]\]')
 with open(f"{_dir}/keystones.json") as f:
     keystones = js.load(f)
 
+with open(f"{_dir}/ascendancy.json") as f:
+    asc_nodes = js.load(f)
 
 def unescape_to_list(props, ret_matches=False):
     matches = reg.findall(props)
@@ -622,9 +624,12 @@ def parse_pob_xml(xml: str, cl=None):
         nodes.append(str(int.from_bytes(byte_tree[pos:pos+2], byteorder='big')))
         pos += 2
     stats['keystones'] = []
+    stats['asc_nodes'] = []
     for node in nodes:
         if node in keystones:
             stats['keystones'].append(keystones[node])
+        if node in asc_nodes:
+            stats['asc_nodes'].append(asc_nodes[node])
     stats['trees'] = {}
     for spec in tree.findall('Tree/Spec'):
         name = spec.attrib['title'] if 'title' in spec.attrib else 'Default'
@@ -670,6 +675,7 @@ def parse_pob_xml(xml: str, cl=None):
     stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
 
     return stats
+
 
 def parse_poe_char_api(json, cl):
     rarity = {0: "Normal",
@@ -724,7 +730,7 @@ def parse_poe_char_api(json, cl):
                             gem_d['level'] = prop['values'][0][0]
                     equipped[slot]['gems'].append(gem_d)
         if slot == 'PassiveJewels':
-            if slot not in equipped:
+            if type(equipped[slot]) is dict:
                 equipped[slot] = []
             equipped[slot].append(char_item)
         else:
@@ -746,8 +752,8 @@ def parse_poe_char_api(json, cl):
         stats['league'] = json['character']['league']
     return stats
 
-def poe_skill_tree(hashes, char_class: str, ascendancy: str = "None",
-                   return_keystones=False):
+def poe_skill_tree(hashes, asc: str = "None",
+                   return_keystones=False, return_asc=False):
     char = {
         "marauder": 1,
         "ranger": 2,
@@ -759,43 +765,43 @@ def poe_skill_tree(hashes, char_class: str, ascendancy: str = "None",
     }
     ascendancy_bytes = {
         "marauder": {
-            "None": 0,
+            "none": 0,
             "juggernaut": 1,
             "berserker": 2,
             "chieftain": 3
         },
         "ranger":  {
-            "None": 0,
+            "none": 0,
             "raider": 1,
             "deadeye": 2,
             "pathfinder": 3
         },
         "witch": {
-            "None": 0,
+            "none": 0,
             "occultist": 1,
             "elementalist": 2,
             "necromancer": 3
         },
         "duelist": {
-            "None": 0,
+            "none": 0,
             "slayer": 1,
             "gladiator": 2,
             "champion": 3
         },
         "templar": {
-            "None": 0,
+            "none": 0,
             "inquisitor": 1,
             "heirophant": 2,
             "guardian": 3
         },
         "shadow": {
-            "None": 0,
+            "none": 0,
             "assassin": 1,
             "trickster": 2,
             "saboteur": 3
         },
         "scion": {
-            "None": 0,
+            "none": 0,
             "ascendant": 1
         }
     }
@@ -808,17 +814,33 @@ def poe_skill_tree(hashes, char_class: str, ascendancy: str = "None",
     ba += bytes([0])
     ba += bytes([0])
     ba += bytes([4])
+    found = False
+    for char in ascendancy_bytes:
+        if asc.lower() in ascendancy_bytes[char]:
+            found = True
+            char_class = char
+    if not found:
+        char_class = asc
+        asc = "none"
     ba += bytes([char[char_class]])
-    ba += bytes([ascendancy_bytes[char_class][ascendancy]])
+    ba += bytes([ascendancy_bytes[char_class][asc.lower()]])
     ba += bytes([0])
     for hash in hashes:
         ba += hash.to_bytes(2, 'big')
     post = binascii.b2a_base64(ba).decode().replace('+', '-').replace('/', '_')
     keystones = []
+    ascendancy = []
+    for hash in hashes:
+        if str(hash) in keystones:
+            keystones.append(keystones[hash])
+        if str(hash) in asc_nodes:
+            ascendancy.append(asc_nodes[hash])
+
     if return_keystones:
-        for hash in hashes:
-            if str(hash) in keystones:
-                keystones.append(keystones[hash])
         return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", keystones
+    if return_keystones and return_asc:
+        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", keystones, ascendancy
+    if return_asc:
+        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", ascendancy
 
     return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}"
