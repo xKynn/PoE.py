@@ -696,6 +696,10 @@ def parse_poe_char_api(json, cl):
             slot = "Ring 2" if "2" in item['inventoryId'] else "Ring 1"
         elif item['inventoryId'] == "Offhand":
             slot = "Weapon 2"
+        elif item['inventoryId'] == "Weapon":
+            slot = "Weapon 1"
+        elif item['inventoryId'] == "Helm":
+            slot = "Helmet"
         elif item['inventoryId'] == "BodyArmour":
             slot = "Body Armour"
         elif item['inventoryId'] == "Flask":
@@ -716,7 +720,16 @@ def parse_poe_char_api(json, cl):
             char_item['explicits'] = item['explicitMods']
         else:
             char_item['explicits'] = []
+        if 'corrupted' in item:
+            char_item['explicits'].append('Corrupted')
         equipped[slot] = {}
+        #print(item.keys())
+        if slot == 'PassiveJewels':
+            if type(equipped[slot]) is dict:
+                equipped[slot] = []
+            equipped[slot].append(char_item)
+        else:
+            equipped[slot] = char_item
         if 'socketedItems' in item:
             equipped[slot]['gems'] = []
             for socketed in item['socketedItems']:
@@ -726,15 +739,11 @@ def parse_poe_char_api(json, cl):
                     for prop in socketed['properties']:
                         if prop['name'] == 'Quality':
                             gem_d['quality'] = prop['values'][0][0].replace('+', '').replace('%', '')
-                        elif prop['name'] == 'Level':
+                        if prop['name'] == 'Level':
                             gem_d['level'] = prop['values'][0][0]
+                    if not 'quality' in gem_d:
+                        gem_d['quality'] = 0
                     equipped[slot]['gems'].append(gem_d)
-        if slot == 'PassiveJewels':
-            if type(equipped[slot]) is dict:
-                equipped[slot] = []
-            equipped[slot].append(char_item)
-        else:
-            equipped[slot] = char_item
         if slot != 'PassiveJewels' and 'Flask' not in slot:
             t = threading.Thread(target=_get_wiki_base, args=(char_item, obj_dict, cl, slot, True))
             threads.append(t)
@@ -815,10 +824,11 @@ def poe_skill_tree(hashes, asc: str = "None",
     ba += bytes([0])
     ba += bytes([4])
     found = False
-    for char in ascendancy_bytes:
-        if asc.lower() in ascendancy_bytes[char]:
+    for a_char in ascendancy_bytes:
+        if asc.lower() in ascendancy_bytes[a_char]:
             found = True
-            char_class = char
+            char_class = a_char
+            break
     if not found:
         char_class = asc
         asc = "none"
@@ -828,19 +838,19 @@ def poe_skill_tree(hashes, asc: str = "None",
     for hash in hashes:
         ba += hash.to_bytes(2, 'big')
     post = binascii.b2a_base64(ba).decode().replace('+', '-').replace('/', '_')
-    keystones = []
+    tree_keystones = []
     ascendancy = []
     for hash in hashes:
         if str(hash) in keystones:
-            keystones.append(keystones[hash])
+            tree_keystones.append(keystones[str(hash)])
         if str(hash) in asc_nodes:
-            ascendancy.append(asc_nodes[hash])
+            ascendancy.append(asc_nodes[str(hash)])
 
-    if return_keystones:
-        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", keystones
     if return_keystones and return_asc:
-        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", keystones, ascendancy
-    if return_asc:
+        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", tree_keystones, ascendancy
+    elif return_keystones and not return_asc:
+        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", tree_keystones
+    elif return_asc:
         return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", ascendancy
 
     return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}"
