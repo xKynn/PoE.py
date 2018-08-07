@@ -746,7 +746,7 @@ def parse_poe_char_api(json, cl):
         if 'corrupted' in item:
             char_item['explicits'].append('Corrupted')
         if 'enchantMods' in item:
-            char['implicits'] = ["{crafted}"+item['enchantMods'][0]]
+            char_item['implicits'] = ["{crafted}"+item['enchantMods'][0]]
         equipped[slot] = {}
         #print(item.keys())
         if slot == 'PassiveJewels':

@@ -1,0 +1,585 @@
+PS I:\PoE.py> python36
+Python 3.6.3 (v3.6.3:2c5fed8, Oct  3 2017, 18:11:49) [MSC v.1900 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from PIL import Image
+>>> from PIL import ImageFont
+>>> font = ImageFont.truetype('Fontin-Smallcaps.ttf')
+>>> nl = Image.open('unique_namebar_left.png')
+>>> nr = Image.open('unique_namebar_left.png')
+>>> nr = Image.open('unique_namebar_right.png')
+>>> nt = Image.open('unique_namebar_trans.png')
+>>> filler = Image.open('filler.png')
+>>> from poe import Client
+>>> cl = Client()
+>>> disfav = cl.get_items({'name': '% Disfavour'})[0]
+https://pathofexile.gamepedia.com/api.php?action=cargoquery&tables=items&fields=base_item,class,name,rarity,size_x,size_y,drop_leagues,required_dexterity,required_strength,required_intelligence,required_level,stat_text,implicit_stat_text,quality,explicit_stat_text,is_corrupted,is_relic,flavour_text,help_text,drop_areas,drop_enabled,drop_level,drop_level_maximum,drop_text,alternate_art_inventory_icons,tags,_pageName=name&where=name%20LIKE%20%22%%20Disfavour%22&format=json
+>>> import json
+>>> with open('poe/data/valid_filters.json') as f:
+...  filt = json.load(f)
+...
+>>> filt['weapon']
+['attack_speed_range_text', 'chaos_damage_min_range_text', 'chaos_damage_max_range_text', 'cold_damage_min_range_text', 'cold_damage_max_range_text', 'fire_damage_min_range_text', 'fire_damage_max_range_text', 'lightning_damage_min_range_text', 'lightning_damage_max_range_text', 'physical_damage_min_range_text', 'physical_damage_max_range_text', 'range_range_text', 'critical_strike_chance_range_text']
+>>> import urllib3
+>>> x = 'https://pathofexile.gamepedia.com/api.php?action=cargoquery'
+>>> z = filt['weapon']
+>>> z['format'] = json
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: list indices must be integers or slices, not str
+>>> params = {'tables': 'weapons', 'fields': ','.join(z), 'where': '''_pageName="Atziri's%20Disfavour"'''}
+>>> params['format'] = 'json'
+>>> final_url = x
+>>>         for key, value in params.items():
+  File "<stdin>", line 1
+    for key, value in params.items():
+    ^
+IndentationError: unexpected indent
+>>> for key, value in params.items():
+... for key, value in params.items()        for key, value in params.items():
+  File "<stdin>", line 2
+    for key, value in params.items()        for key, value in params.items():
+      ^
+IndentationError: expected an indented block
+>>>             final_url = f"{final_url}&{key}={value.replace(' ', '%20')}"
+  File "<stdin>", line 1
+    final_url = f"{final_url}&{key}={value.replace(' ', '%20')}"
+    ^
+IndentationError: unexpected indent
+>>> for key, value in params.items():
+...             final_url = f"{final_url}&{key}={value.replace(' ', '%20')}"
+...
+>>> params
+{'tables': 'weapons', 'fields': 'attack_speed_range_text,chaos_damage_min_range_text,chaos_damage_max_range_text,cold_damage_min_range_text,cold_damage_max_range_text,fire_damage_min_range_text,fire_damage_max_range_text,lightning_damage_min_range_text,lightning_damage_max_range_text,physical_damage_min_range_text,physical_damage_max_range_text,range_range_text,critical_strike_chance_range_text', 'where': '_pageName="Atziri\'s%20Disfavour"', 'format': 'json'}
+>>> final_url
+'https://pathofexile.gamepedia.com/api.php?action=cargoquery&tables=weapons&fields=attack_speed_range_text,chaos_damage_min_range_text,chaos_damage_max_range_text,cold_damage_min_range_text,cold_damage_max_range_text,fire_damage_min_range_text,fire_damage_max_range_text,lightning_damage_min_range_text,lightning_damage_max_range_text,physical_damage_min_range_text,physical_damage_max_range_text,range_range_text,critical_strike_chance_range_text&where=_pageName="Atziri\'s%20Disfavour"&format=json'
+>>> r = urllib3.PoolManager().request.get('GET', final_url)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'function' object has no attribute 'get'
+>>> p = urllib3.PoolManager()
+>>> r = p.request.get('GET', final_url)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'function' object has no attribute 'get'
+>>> r = urllib3.PoolManager().request('GET', final_url)
+>>> r
+<urllib3.response.HTTPResponse object at 0x0000018DD832F8D0>
+>>> r.status
+200
+>>> resp = json.loads(r.data.decode('utf-8'))
+>>> resp
+{'cargoquery': [{'title': {'attack speed range text': '(1.34 to 1.39)', 'chaos damage min range text': '0', 'chaos damage max range text': '0', 'cold damage min range text': '0', 'cold damage max range text': '0', 'fire damage min range text': '0', 'fire damage max range text': '0', 'lightning damage min range text': '0', 'lightning damage max range text': '0', 'physical damage min range text': '(358 to 376)', 'physical damage max range text': '(481 to 505)', 'range range text': '13', 'critical strike chance range text': '5.00%'}}]}
+>>> props=[]
+>>> disfav
+<Item: name=Atziri's Disfavour rarity=Unique>
+>>> disfav.stat_text
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'Item' object has no attribute 'stat_text'
+>>> dir(disfav)
+['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'alt_art', 'base', 'drop', 'explicits', 'help_text', 'implicits', 'is_corrupted', 'is_relic', 'item_class', 'lore', 'name', 'quality', 'rarity', 'requirements', 'size']
+>>> disfav.item_class
+'Two Hand Axes'
+>>> props.append(disfav.item_class)
+>>> props.append('Quality: +20%')
+>>> props.append(f"Physical Damage: {}")
+  File "<stdin>", line 1
+SyntaxError: f-string: empty expression not allowed
+>>> disfav_stats = resp['cargoquery']
+>>> disfav_stats = resp['cargoquery'][0]['title']
+>>> ds = resp['cargoquery'][0]['title']
+>>> props.append(f"Physical Damage: {ds['phyiscal damage min range text'}-{ds['phyiscal damage max range text'}")
+  File "<stdin>", line 1
+SyntaxError: f-string: mismatched '(', '{', or '['
+>>> props.append(f"Physical Damage: {ds['phyiscal damage min range text']}-{ds['phyiscal damage max range text']}")
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+KeyError: 'phyiscal damage min range text'
+>>> props.append(f"Physical Damage: {ds['physical damage min range text']}-{ds['physical damage max range text']}")
+>>> props.append(f"Critical Strike Chance: {ds['critical strike chance range text'}")
+  File "<stdin>", line 1
+SyntaxError: f-string: expecting '}'
+>>> props.append(f"Critical Strike Chance: {ds['critical strike chance range text']}")
+>>> props.append(f"Attacks Per Second: {ds['attaack speed range text']}")
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+KeyError: 'attaack speed range text'
+>>> props.append(f"Attacks Per Second: {ds['attack speed range text']}")
+>>> props.append(f"Weapon Range: {ds['range range text']}
+  File "<stdin>", line 1
+    props.append(f"Weapon Range: {ds['range range text']}
+                                                        ^
+SyntaxError: EOL while scanning string literal
+>>> props.append(f"Weapon Range: {ds['range range text']}")
+>>> props.append('separator')
+>>> disfav.stat_text
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'Item' object has no attribute 'stat_text'
+>>> disfav.implicits
+''
+>>> disfav.explicits
+'+2 to [[Level]] of [[Item socket|Socketed]] Support Gems&lt;br&gt;Adds (220-235) to (270-290) [[Physical Damage]]&lt;br&gt;(12-16)% increased [[Attack Speed]]&lt;br&gt;+2 to Weapon range&lt;br&gt;25% chance to cause Bleeding on [[Hit]]'
+>>> props.extend(disfav.explicits
+... 123pk41prjf
+  File "<stdin>", line 2
+    123pk41prjf
+      ^
+SyntaxError: invalid syntax
+>>> import html
+>>> props.extend(html.unescape(disfav.explicits).split('<br\>
+  File "<stdin>", line 1
+    props.extend(html.unescape(disfav.explicits).split('<br\>
+                                                            ^
+SyntaxError: EOL while scanning string literal
+>>> props.extend(html.unescape(disfav.explicits).split('<br\>'))
+>>> props
+['Two Hand Axes', 'Quality: +20%', 'Physical Damage: (358 to 376)-(481 to 505)', 'Critical Strike Chance: 5.00%', 'Attacks Per Second: (1.34 to 1.39)', 'Weapon Range: 13', 'separator', '+2 to [[Level]] of [[Item socket|Socketed]] Support Gems<br>Adds (220-235) to (270-290) [[Physical Damage]]<br>(12-16)% increased [[Attack Speed]]<br>+2 to Weapon range<br>25% chance to cause Bleeding on [[Hit]]']
+>>> del props[-1]
+>>> props
+['Two Hand Axes', 'Quality: +20%', 'Physical Damage: (358 to 376)-(481 to 505)', 'Critical Strike Chance: 5.00%', 'Attacks Per Second: (1.34 to 1.39)', 'Weapon Range: 13', 'separator']
+>>> html.unescape(disfav.explicits)
+'+2 to [[Level]] of [[Item socket|Socketed]] Support Gems<br>Adds (220-235) to (270-290) [[Physical Damage]]<br>(12-16)% increased [[Attack Speed]]<br>+2 to Weapon range<br>25% chance to cause Bleeding on [[Hit]]'
+>>> props.extend(html.unescape(disfav.explicits).split('<br>'))
+>>> props
+['Two Hand Axes', 'Quality: +20%', 'Physical Damage: (358 to 376)-(481 to 505)', 'Critical Strike Chance: 5.00%', 'Attacks Per Second: (1.34 to 1.39)', 'Weapon Range: 13', 'separator', '+2 to [[Level]] of [[Item socket|Socketed]] Support Gems', 'Adds (220-235) to (270-290) [[Physical Damage]]', '(12-16)% increased [[Attack Speed]]', '+2 to Weapon range', '25% chance to cause Bleeding on [[Hit]]']
+>>> props.append('separator')
+>>> props.extend(html.unescape(disfav.lore).split('<br>'))
+>>> props
+['Two Hand Axes', 'Quality: +20%', 'Physical Damage: (358 to 376)-(481 to 505)', 'Critical Strike Chance: 5.00%', 'Attacks Per Second: (1.34 to 1.39)', 'Weapon Range: 13', 'separator', '+2 to [[Level]] of [[Item socket|Socketed]] Support Gems', 'Adds (220-235) to (270-290) [[Physical Damage]]', '(12-16)% increased [[Attack Speed]]', '+2 to Weapon range', '25% chance to cause Bleeding on [[Hit]]', 'separator', '"I do not believe in disguising my disappointment."', '- Atziri, Queen of the Vaal']
+>>> length = None
+>>> font
+<PIL.ImageFont.FreeTypeFont object at 0x0000018DD77365C0>
+>>> font = ImageFont.open('Fontin-Smallcaps.ttf', '17')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: module 'PIL.ImageFont' has no attribute 'open'
+>>> font = ImageFont.truetype('Fontin-Smallcaps.ttf', '17')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\ImageFont.py", line 261, in truetype
+    return FreeTypeFont(font, size, index, encoding, layout_engine)
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\ImageFont.py", line 144, in __init__
+    self.font = core.getfont(font, size, index, encoding, layout_engine=layout_engine)
+TypeError: an integer is required (got type str)
+>>> font = ImageFont.truetype('Fontin-Smallcaps.ttf', 17)
+>>> dir(font)
+['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'encoding', 'font', 'font_variant', 'getmask', 'getmask2', 'getmetrics', 'getname', 'getoffset', 'getsize', 'index', 'layout_engine', 'path', 'size']
+>>> font.getsize()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: getsize() missing 1 required positional argument: 'text'
+>>> font.getsize('a')
+(9, 16)
+>>> font = ImageFont.truetype('Fontin-Smallcaps.ttf', 16)
+>>> font.getsize('a')
+(9, 15)
+>>> for prop in props:
+...  1231jr
+  File "<stdin>", line 2
+    1231jr
+         ^
+SyntaxError: invalid syntax
+>>> length = 0
+>>> for prop in props:
+...  if font.getsize(prop) > length:
+...   length = font.getsize(prop)
+...
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+TypeError: '>' not supported between instances of 'tuple' and 'int'
+>>> for prop in props:
+...  if font.getsize(prop)[0] > length:
+...   length = font.getsize(prop)[0]
+...
+>>> length
+423
+>>> len(props)
+15
+>>> filler.size
+(330, 34)
+>>> filler.resize((length, 34)).save('test1.png')
+>>> height = nt.size[1] + len(props)*filler.size[1]
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((length,nt.size[1])), (nl.size[1],0)))
+  File "<stdin>", line 1
+    item.paste(nt.resize((length,nt.size[1])), (nl.size[1],0)))
+                                                              ^
+SyntaxError: invalid syntax
+>>> item.paste(nt.resize((length,nt.size[1])), (nl.size[1],0))
+>>> item.save('test.png')
+>>> nl.size[0]
+41
+>>> length - nl.size[0]*2
+341
+>>> ntw = length - nl.size[0]*2
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.save('test.png')
+>>> item.paste(nr)
+>>> item.save('test.png')
+>>> item.paste(nl)
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item.save('test.png')
+>>> current_ht = nt.size[1]
+>>> items_filler = filler.resize((length,filler.size[1]))
+>>> separator = Image.open('separator_unique.png')
+>>> for prop in props:
+...  if prop != 'separator':
+...   132s
+  File "<stdin>", line 3
+    132s
+       ^
+SyntaxError: invalid syntax
+>>> length = length + 34
+>>> length - nl.size[0]*2
+375
+>>> ntw = length - nl.size[0]*2
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item.save('test.png')
+>>> items_filler = filler.resize((length,filler.size[1]))
+>>> for prop in props:
+...  if prop != 'separator':
+...   132s
+  File "<stdin>", line 3
+    132s
+       ^
+SyntaxError: invalid syntax
+>>> from PIL import ImageDraw
+>>> font = ImageFont.truetype('Fontin-Smallcaps.ttf', 15)
+>>> font.getsize('a')
+(8, 14)
+>>> d = ImageDraw.Draw(item)
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((123jd
+  File "<stdin>", line 3
+    d.text((123jd
+                ^
+SyntaxError: invalid syntax
+>>> current_ht
+56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((17,current_ht+10), prop, font=font)
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]/2,0))123dsa
+  File "<stdin>", line 5
+    item.paste(separator, (length/2-separator.size[0]/2,0))123dsa
+                                                             ^
+SyntaxError: invalid syntax
+>>> for prop in props:
+...  if prop != 'separator':
+...   fil = ImageDraw.Draw(items_filler)
+...   fil.text((17,current_ht+10), prop, font=font)
+...   item.paste(fil, (0,current_ht))
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]/2,0))
+...  current_ht += fil.size[1]
+...
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\Image.py", line 1380, in paste
+    size = im.size
+AttributeError: 'ImageDraw' object has no attribute 'size'
+>>> for prop in props:
+...  if prop != 'separator':
+...   fil = ImageDraw.Draw(items_filler)
+...   fil.text((17,current_ht+10), prop, font=font)
+...   item.paste(fil, (0,current_ht))
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]/2,0))
+...  current_ht += items_filler.size[1]
+...
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\Image.py", line 1380, in paste
+    size = im.size
+AttributeError: 'ImageDraw' object has no attribute 'size'
+>>> item.save('test.png')
+>>> for prop in props:
+...  if prop != 'separator':
+...   fil = ImageDraw.Draw(items_filler)
+...   fil.text((17,current_ht+10), prop, font=font)
+...   item.paste(Image.alpha_composite(iteems_filler,fil), (0,current_ht))
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]/2,0))
+...  current_ht += items_filler.size[1]
+...
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+NameError: name 'iteems_filler' is not defined
+>>> for prop in props:
+...  if prop != 'separator':
+...   fil = ImageDraw.Draw(items_filler)
+...   fil.text((17,current_ht+10), prop, font=font)
+...   item.paste(Image.alpha_composite(items_filler,fil), (0,current_ht))
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]/2,0))
+...  current_ht += items_filler.size[1]
+...
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\Image.py", line 2607, in alpha_composite
+    im2.load()
+AttributeError: 'ImageDraw' object has no attribute 'load'
+>>> fil
+<PIL.ImageDraw.ImageDraw object at 0x0000018DD83A6BE0>
+>>> fil.save('idk.png')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'ImageDraw' object has no attribute 'save'
+>>> dir(fil)
+['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_getink', '_multiline_check', '_multiline_split', 'arc', 'bitmap', 'chord', 'draw', 'ellipse', 'fill', 'font', 'fontmode', 'getfont', 'im', 'ink', 'line', 'mode', 'multiline_text', 'multiline_textsize', 'palette', 'pieslice', 'point', 'polygon', 'rectangle', 'shape', 'text', 'textsize']
+>>> items_filler.save('smt')
+Traceback (most recent call last):
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\Image.py", line 1915, in save
+    format = EXTENSION[ext]
+KeyError: ''
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\Image.py", line 1917, in save
+    raise ValueError('unknown file extension: {}'.format(ext))
+ValueError: unknown file extension:
+>>> items_filler.save('smt.png')
+>>> from PIL import ImageOps
+>>> ImageOps.expand(item, border=1,fill=(174,95,38))
+<PIL.Image.Image image mode=RGB size=459x568 at 0x18DD83A6B00>
+>>> ImageOps.expand(item, border=1,fill=(174,95,38)).save('test.png')
+>>> ImageOps.expand(item, border=2,fill=(174,95,38)).save('test.png')
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((17,current_ht+10), prop, font=font)
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]/2,0))
+...  current_ht += 34
+...
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\Image.py", line 1408, in paste
+    self.im.paste(im, box)
+TypeError: integer argument expected, got float
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((17,current_ht+10), prop, font=font)
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]//2,0))123a
+  File "<stdin>", line 5
+    item.paste(separator, (length/2-separator.size[0]//2,0))123a
+                                                              ^
+SyntaxError: invalid syntax
+>>> item.save('test.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> item.save('test.png')
+>>> d = ImageDraw.Draw(item)
+>>> d.text((37,66),prop[0],font=font,align='center')
+>>> item.save('test.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> d.text((37,66),prop[0],font=font)
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> d.text((17,66),prop[0],font=font)
+>>> item.save('test.png')
+>>> prop[0]
+'s'
+>>> prop
+'separator'
+>>> props
+['Two Hand Axes', 'Quality: +20%', 'Physical Damage: (358 to 376)-(481 to 505)', 'Critical Strike Chance: 5.00%', 'Attacks Per Second: (1.34 to 1.39)', 'Weapon Range: 13', 'separator', '+2 to [[Level]] of [[Item socket|Socketed]] Support Gems', 'Adds (220-235) to (270-290) [[Physical Damage]]', '(12-16)% increased [[Attack Speed]]', '+2 to Weapon range', '25% chance to cause Bleeding on [[Hit]]', 'separator', '"I do not believe in disguising my disappointment."', '- Atziri, Queen of the Vaal']
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> d.text((17,66),props[0],font=font,align='center')
+>>> item.save('test.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+10), prop, font=font)
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]//2,0))123a
+  File "<stdin>", line 5
+    item.paste(separator, (length/2-separator.size[0]//2,0))123a
+                                                              ^
+SyntaxError: invalid syntax
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+10), prop, font=font)
+...  else:
+...   item.paste(separator, (length/2-separator.size[0]//2,0))
+...  current_ht += 34
+...
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "C:\Users\lenovo pc\AppData\Local\Programs\Python\Python36\lib\site-packages\PIL\Image.py", line 1408, in paste
+    self.im.paste(im, box)
+TypeError: integer argument expected, got float
+>>> item.save('test.png')
+>>> current_ht=56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+5), prop, font=font)
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,0))
+...
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+5), prop, font=font)
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,0))
+...  current_ht += 5
+...
+>>> item.save('test.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+5), prop, font=font)1s
+  File "<stdin>", line 3
+    d.text((length//2-font.getsize(prop)[0]//2,current_ht+5), prop, font=font)1s
+                                                                              ^
+SyntaxError: invalid syntax
+>>> current_ht=56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+5), prop, font=font)1s
+  File "<stdin>", line 3
+    d.text((length//2-font.getsize(prop)[0]//2,current_ht+5), prop, font=font)1s
+                                                                              ^
+SyntaxError: invalid syntax
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+5), prop, font=font)
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,0))
+...  current_ht += 25
+...
+>>> item.save('test.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> current_ht = 56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+3), prop, font=font)1s
+  File "<stdin>", line 3
+    d.text((length//2-font.getsize(prop)[0]//2,current_ht+3), prop, font=font)1s
+                                                                              ^
+SyntaxError: invalid syntax
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+3), prop, font=font)
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,current_ht))
+...  current_ht += 21
+...
+>>> item.save('test.png')
+>>> separator = Image.open('separator_unique.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> current_ht = 56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+3), prop, font=font)
+...   current_ht += 21
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,current_ht+3))
+...   current_ht += 14
+...
+>>> item.save('test.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> current_ht = 56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+4), prop, font=font)
+...   current_ht += 22
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,current_ht+3))
+...   current_ht += 14
+...
+>>> item.save('test.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> current_ht = 56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+4), prop, font=font)
+...   current_ht += 23
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,current_ht+3))
+...   current_ht += 11
+...
+>>> item.save('text.png')
+>>> item = Image.new('RGB', (length, height))
+>>> item.paste(nl)
+>>> item.paste(nt.resize((ntw,nt.size[1])), (nl.size[0],0))
+>>> item.paste(nr,(length-nl.size[0],0))
+>>> item = ImageOps.expand(item, border=2,fill=(174,95,38))
+>>> d = ImageDraw.Draw(item)
+>>> current_ht = 56
+>>> for prop in props:
+...  if prop != 'separator':
+...   d.text((length//2-font.getsize(prop)[0]//2,current_ht+4), prop, font=font)
+...   current_ht += 19
+...  else:
+...   item.paste(separator, (length//2-separator.size[0]//2,current_ht+3))
+...   current_ht += 11
+...
+>>> item.save('text.png')
+>>>
