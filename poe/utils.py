@@ -316,18 +316,19 @@ class ItemRender:
             else:
                 explicits = None
             
-            if explicits[0].startswith('{'):
+            if explicits and explicits[0].startswith('{'):
                 implicits = [explicits[0]]
-
-            for implicit in implicits:
-                stats.append(self.prop(implicit, '', PROP_COLOR))
-            stats.append(separator)
-
-            for explicit in explicits:
-                if explicit.lower() == "corrupted":
-                    stats.append(self.prop(explicit, '', CORRUPTED))
-                else:
-                    stats.append(self.prop(explicit, '', PROP_COLOR))
+            if implicits:
+                for implicit in implicits:
+                    stats.append(self.prop(implicit, '', PROP_COLOR))
+                stats.append(separator)
+            
+            if explicits:
+                for explicit in explicits:
+                    if explicit.lower() == "corrupted":
+                        stats.append(self.prop(explicit, '', CORRUPTED))
+                    else:
+                        stats.append(self.prop(explicit, '', PROP_COLOR))
 
             if item.lore:
                 if stats[-1] is not separator:
