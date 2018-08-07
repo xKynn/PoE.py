@@ -539,8 +539,7 @@ def parse_pob_item(itemtext):
         base = item[pobitem['rarity_index']+2]
     elif pobitem['rarity'].lower() == 'magic':
         name = item[pobitem['rarity_index']+1]
-        n = name[:name.find('of')-1]
-        base = ' '.join(n.split(' ')[1:])
+        base = ' '.join(name.split('>>')[-1].split(' of ')[0].split(' ')[1:])
     else:
         name = item[pobitem['rarity_index'] + 1]
         base = item[pobitem['rarity_index'] + 1]
@@ -665,7 +664,10 @@ def parse_pob_xml(xml: str, cl=None):
             parsed = parse_pob_item(tree.find(f'Items/Item[@id="{item_id}"]').text.replace('\t', ''))
             stats['jewels'].append(parsed)
     stats['equipped'] = equipped
-    stats['bandit'] = tree.find('Build').attrib['bandit']
+    try:
+        stats['bandit'] = tree.find('Build').attrib['bandit']
+    except:
+        stats['bandit'] = "None"
     stats['class'] = tree.find('Build').attrib['className']
     stats['ascendancy'] = tree.find('Build').attrib['ascendClassName']
     stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
@@ -713,8 +715,13 @@ def parse_poe_char_api(json, cl):
         char_item = {}
         char_item['rarity'] = rarity[item['frameType']]
         char_item['name'] = item["name"].split('>>')[-1]
+        if char_item['name'] == '':
+            char_item['name'] = item["typeLine"].split('>>')[-1]
         ##print(char_item['name'], item['category'])
-        char_item['base'] = item["typeLine"]
+        if char_item['rarity'] == "Magic":
+            char_item['base'] = ' '.join(item['typeLine'].split('>>')[-1].split(' of ')[0].split(' ')[1:])
+        else:
+            char_item['base'] = item["typeLine"]
         if 'Ring' in item['inventoryId']:
             slot = "Ring 2" if "2" in item['inventoryId'] else "Ring 1"
         elif item['inventoryId'] == "Offhand":
@@ -825,7 +832,7 @@ def poe_skill_tree(hashes, asc: str = "None",
         "templar": {
             "none": 0,
             "inquisitor": 1,
-            "heirophant": 2,
+            "hierophant": 2,
             "guardian": 3
         },
         "shadow": {
@@ -849,8 +856,9 @@ def poe_skill_tree(hashes, asc: str = "None",
     ba += bytes([0])
     ba += bytes([4])
     found = False
+    asc = asc.lower()
     for a_char in ascendancy_bytes:
-        if asc.lower() in ascendancy_bytes[a_char]:
+        if asc in ascendancy_bytes[a_char]:
             found = True
             char_class = a_char
             break
