@@ -539,7 +539,7 @@ def parse_pob_item(itemtext):
         base = item[pobitem['rarity_index']+2]
     elif pobitem['rarity'].lower() == 'magic':
         name = item[pobitem['rarity_index']+1]
-        base = ' '.join(name.split('>>')[-1].split(' of ')[0].split(' ')[1:])
+        base = name.split('>>')[-1]
     else:
         name = item[pobitem['rarity_index'] + 1]
         base = item[pobitem['rarity_index'] + 1]
@@ -552,6 +552,15 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     else:
         #print("base", item['base'])
         try:
+            if item['rarity'].lower() == 'magic' and item['name'] == item['base']:
+                if len(item['explicits']) == 1:
+                    if ' of ' in item['base']:
+                        item['base'] = item['base'].rsplit(' of ')[0]
+                    else:
+                        item['base'] = ' '.join(item['base'].split(' ')[1:])
+                else:
+                    item['base'] = ' '.join(item['base'].split(' of ')[0].split(' ')[1:])
+
             wiki_base = cl.find_items({'name': item['base']})[0]
         except:
             print(item)
@@ -719,7 +728,7 @@ def parse_poe_char_api(json, cl):
             char_item['name'] = item["typeLine"].split('>>')[-1]
         ##print(char_item['name'], item['category'])
         if char_item['rarity'] == "Magic":
-            char_item['base'] = ' '.join(item['typeLine'].split('>>')[-1].split(' of ')[0].split(' ')[1:])
+            char_item['base'] = item['typeLine'].split('>>')[-1]
         else:
             char_item['base'] = item["typeLine"]
         if 'Ring' in item['inventoryId']:
