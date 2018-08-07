@@ -318,15 +318,22 @@ class ItemRender:
             
             if explicits and explicits[0].startswith('{'):
                 implicits = [explicits[0]]
+                explicits.pop(0)
             if implicits:
                 for implicit in implicits:
-                    stats.append(self.prop(implicit, '', PROP_COLOR))
+                    if implicit.startswith('{'):
+                        stats.append(self.prop(implicit.replace('{crafted}',''), '', CRAFTED))
+                    else:
+                        stats.append(self.prop(implicit, '', PROP_COLOR))
+                    
                 stats.append(separator)
             
             if explicits:
                 for explicit in explicits:
                     if explicit.lower() == "corrupted":
                         stats.append(self.prop(explicit, '', CORRUPTED))
+                    elif explicit.startswith('{'):
+                        stats.append(self.prop(explicit.replace('{crafted}',''), '', CRAFTED))
                     else:
                         stats.append(self.prop(explicit, '', PROP_COLOR))
 
@@ -498,7 +505,10 @@ class ItemRender:
                     cur.move_x(self.font.getsize(stat.title)[0])
                     d.text(cur.pos, stat.text, fill=stat.color, font=self.font)
                 else:
-                    color = CRAFTED if stat.title.startswith('{') else stat.color
+                    if stat.title.startswith('{'):
+                        color = CRAFTED
+                    else:
+                        color = stat.color
                     #print(stat.title, cur.pos, stat.color)
                     d.text(cur.pos, stat.title, fill=color, font=self.font)
                 cur.move_y(STAT_HEIGHT)
@@ -735,6 +745,8 @@ def parse_poe_char_api(json, cl):
             char_item['explicits'] = []
         if 'corrupted' in item:
             char_item['explicits'].append('Corrupted')
+        if 'enchantMods' in item:
+            char['implicits'] = ["{crafted}"+item['enchantMods'][0]]
         equipped[slot] = {}
         #print(item.keys())
         if slot == 'PassiveJewels':
