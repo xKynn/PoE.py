@@ -316,6 +316,8 @@ class ItemRender:
                     if explicit.lower() == "corrupted":
                         stats.append(self.prop(explicit, '', CORRUPTED))
                     else:
+                        if explicit.startswith('{'):
+                            stats.append(separator)
                         stats.append(self.prop(explicit, '', PROP_COLOR))
 
             if item.lore:
@@ -486,8 +488,9 @@ class ItemRender:
                     cur.move_x(self.font.getsize(stat.title)[0])
                     d.text(cur.pos, stat.text, fill=stat.color, font=self.font)
                 else:
+                    color = CRAFTED if stat.title.startswith('{') else stat.color
                     #print(stat.title, cur.pos, stat.color)
-                    d.text(cur.pos, stat.title, fill=stat.color, font=self.font)
+                    d.text(cur.pos, stat.title, fill=color, font=self.font)
                 cur.move_y(STAT_HEIGHT)
                 cur.reset()
                 self.last_action = ""

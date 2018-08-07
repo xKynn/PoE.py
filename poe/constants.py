@@ -19,6 +19,7 @@ NORMAL_COLOR = (170, 158, 130)
 RARE_COLOR = (255, 255, 119)
 PROPH_COLOR = (181, 75, 255)
 CORRUPTED = (210, 0, 0)
+CRAFTED = (192, 242, 255)
 flavor_color = {"unique": UNIQUE_COLOR,
                 "gem": GEM_COLOR,
                 "normal": NORMAL_COLOR,
