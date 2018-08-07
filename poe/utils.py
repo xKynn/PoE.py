@@ -304,21 +304,30 @@ class ItemRender:
             stats.append(self.prop("Gem Help", "colour to gain this skill. Right click to", DESC_COLOR))
             stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
         if 'gem' not in item.tags and item.base != "Prophecy":
+          
             if item.implicits:
                 implicits = unescape_to_list(item.implicits)
-                for implicit in implicits:
-                    stats.append(self.prop(implicit, '', PROP_COLOR))
-                stats.append(separator)
+            else:
+                implicits = None
 
             if item.explicits:
                 explicits = unescape_to_list(item.explicits)
-                for explicit in explicits:
-                    if explicit.lower() == "corrupted":
-                        stats.append(self.prop(explicit, '', CORRUPTED))
-                    else:
-                        if explicit.startswith('{'):
-                            stats.append(separator)
-                        stats.append(self.prop(explicit, '', PROP_COLOR))
+
+            else:
+                explicits = None
+            
+            if explicits[0].startswith('{'):
+                implicits = [explicits[0]]
+
+            for implicit in implicits:
+                stats.append(self.prop(implicit, '', PROP_COLOR))
+            stats.append(separator)
+
+            for explicit in explicits:
+                if explicit.lower() == "corrupted":
+                    stats.append(self.prop(explicit, '', CORRUPTED))
+                else:
+                    stats.append(self.prop(explicit, '', PROP_COLOR))
 
             if item.lore:
                 if stats[-1] is not separator:
