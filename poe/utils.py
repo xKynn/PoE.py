@@ -88,6 +88,7 @@ class ItemRender:
         self.namebar_right = Image.open(f'{_dir}//{self.flavor}_namebar_right.png')
         self.namebar_trans = Image.open(f'{_dir}//{self.flavor}_namebar_trans.png')
         self.separator = Image.open(f'{_dir}//{self.flavor}_separator.png')
+        self.div_frame = Image.open(f'{_dir}//div_frame.png')
 
         # A namedtuple to handle properties.
         # This works fairly well except for Separators which is kinda hacky
@@ -102,8 +103,8 @@ class ItemRender:
     # of an if-fest, calc_size and sort_stats.
     # TODO:
     # 1. Maybe make less redundant later
-    def calc_size(self, stats):
-        width = 0
+    def calc_size(self, stats, header):
+        width = self.header_font.getsize(header)[0] + 6
         height = 0
         last_sep = False
         for stat in stats:
@@ -358,10 +359,55 @@ class ItemRender:
 
         return stats
 
+    def render_divcard(self, card):
+        http = urllib3.PoolManager()
+        r = http.request('GET', card.card_art, preload_content=False)
+        art = Image.open(BytesIO(r.read()))
+        art = art.convert('RGBA')
+        item = Image.new('RGBA', self.div_frame.size, (255, 0, 0, 0))
+        print('center', self.div_frame.size[0]//2)
+        print(self.div_frame.size)
+        cur = Cursor(self.div_frame.size[0]//2)
+        cur.reset()
+        print('move x', (art.size[0]//2)*-1)
+        cur.move_x((art.size[0]//2)*-1)
+        cur.move_y(47)
+        print(cur.pos)
+        item.alpha_composite(art, cur.pos)
+        item.alpha_composite(self.div_frame, (0,0))
+        cur.reset()
+        d = ImageDraw.Draw(item)
+        cur.y = 0
+        cur.move_y(20)
+        header_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 20)
+        cur.move_x((header_font.getsize(card.name)[0]//2)*-1)
+        d.text(cur.pos, card.name, fill='black', font=header_font)
+        cur.reset()
+        cur.x = 77
+        cur.y = 316
+        cur.move_x((self.font.getsize(card.stack_size)[0] // 2) * -1)
+        d.text(cur.pos, card.stack_size, fill=None, font=self.font)
+        cur.y = 384
+        cur.reset()
+        fill = flavor_color[card.reward_flavor]
+        cur.move_x((self.font.getsize(card.reward)[0] // 2) * -1)
+        d.text(cur.pos, card.reward, fill=fill, font=self.font)
+        cur.reset()
+        cur.y = 540
+        lore = unescape_to_list(card.lore)
+        for line in lore:
+            text = line
+            cur.move_y(STAT_SPACING)
+            cur.move_x((self.font.getsize(text)[0] // 2) * -1)
+            d.text(cur.pos, text, fill=UNIQUE_COLOR, font=self.lore_font)
+            cur.move_y(self.lore_font.getsize(text)[1])
+            cur.reset()
+        return item
+
     def render(self, poe_item):
         stats = self.sort_stats(poe_item)
         fill = flavor_color[self.flavor]
-        box_size = self.calc_size(stats)
+        box_size = self.calc_size(stats, poe_item.name)
         #print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
@@ -381,9 +427,10 @@ class ItemRender:
         cur.move_y(2+self.header_font.getsize(poe_item.name)[1])
         cur.reset()
         if 'gem' not in poe_item.tags and poe_item.base != "Prophecy":
-            cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
-            d.text(cur.pos, poe_item.base, fill=fill, font=self.header_font)
-            cur.reset()
+            if poe_item.base not in poe_item.name:
+                cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
+                d.text(cur.pos, poe_item.base, fill=fill, font=self.header_font)
+                cur.reset()
         cur.y = 0
         cur.move_y(transformed_namebar.size[1])
         #print(stats[-1].title)

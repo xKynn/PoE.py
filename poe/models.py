@@ -52,6 +52,18 @@ class Item:
     def __repr__(self):
         return f"<Item: name={self.name} rarity={self.rarity}>"
 
+class DivCard(Item):
+    def __init__(self, base, item_class, name, rarity, size, drop, requirements,
+                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
+                 div_data):
+        super().__init__(base, item_class, name, rarity, size, drop, requirements,
+                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags,
+                         icon)
+        self.card_art = div_data['card_art']
+        self.stack_size = div_data['stack_size']
+        self.reward_flavor = div_data['reward_flavor']
+        self.reward = div_data['reward']
+
 class Prophecy(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
                  lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,

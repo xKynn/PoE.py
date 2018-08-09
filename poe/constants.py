@@ -24,4 +24,5 @@ flavor_color = {"unique": UNIQUE_COLOR,
                 "gem": GEM_COLOR,
                 "normal": NORMAL_COLOR,
                 "prophecy": PROPH_COLOR,
-                "rare": RARE_COLOR}
+                "rare": RARE_COLOR,
+                "magic": PROP_COLOR}

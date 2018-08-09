@@ -7,8 +7,11 @@ from .models import Weapon
 from .models import Armour
 from .models import Prophecy
 from .models import Gem
+from .models import DivCard
 from .models import ItemDrop
 from .models import Requirements
+from .utils import reg
+from bs4 import BeautifulSoup as BS
 
 
 class ClientBase:
@@ -157,6 +160,32 @@ class ClientBase:
                 i = Armour
             elif 'gem' in item['tags']:
                 current_item = self.get_gems({'name': item['name']}, req, url)[0]
+            elif 'divination_card' in item['tags']:
+                params ={
+                    'tables': 'divination_cards, stackables',
+                    'join_on': 'divination_cards._pageName=stackables._pageName',
+                    'fields': 'card_art, stack_size',
+                    'where': f'divination_cards._pageName="{item["name"]}"'
+                }
+                data = self.extract_cargoquery(req(url, params))[0]
+                card_art = self.get_image_url(data['card art'], req)
+                soup = BS(html.unescape(item['html']))
+                div_data = soup.select_one('span.divicard-reward span span')
+                reward_flavour = div_data.attrs['class'][1][1:]
+                if reward_flavour == 'currency':
+                    reward_flavour = 'normal'
+                matches = reg.findall(div_data.text)
+                if len(matches)>1:
+                    reward = matches[1].split('|')[1].strip(']]')
+                elif len(matches) == 1:
+                    reward = matches[0].split('|')[1].strip(']]')
+                else:
+                    reward = div_data.text
+                stats = {'card_art': card_art,
+                         'stack_size': data['stack size'],
+                         'reward_flavor': reward_flavour,
+                         'reward': reward}
+                i = DivCard
             elif item['base item'] == "Prophecy":
                 params = {
                     'tables': 'prophecies',
