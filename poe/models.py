@@ -80,36 +80,62 @@ class Weapon(Item):
                  weapon_stats):
         super().__init__(base, item_class, name, rarity, size, drop, requirements,
                          lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon)
-        #print(weapon_stats)
+
         self.attack_speed = weapon_stats['attack speed range text']
-        if weapon_stats['chaos damage max range text'] != '0':
-            self.chaos_damage = f"{weapon_stats['chaos damage min range text']}-" \
-                                f"{weapon_stats['chaos damage max range text']}"
-        else:
-            self.chaos_damage = None
-        if weapon_stats['cold damage max range text'] != '0':
-            self.cold_damage = f"{weapon_stats['cold damage min range text']}-" \
-                               f"{weapon_stats['cold damage max range text']}"
-        else:
-            self.cold_damage = None
-        if weapon_stats['fire damage max range text'] != '0':
-            self.fire_damage = f"{weapon_stats['fire damage min range text']}-" \
-                               f"{weapon_stats['fire damage max range text']}"
-        else:
-            self.fire_damage = None
-        if weapon_stats['lightning damage max range text'] != '0':
-            self.lightning_damage = f"{weapon_stats['lightning damage min range text']}-" \
-                                    f"{weapon_stats['lightning damage max range text']}"
-        else:
-            self.lightning_damage = None
-        if weapon_stats['physical damage max range text'] != '0':
-            self.physical_damage = f"{weapon_stats['physical damage min range text']}-" \
-                                   f"{weapon_stats['physical damage max range text']}"
-        else:
-            self.physical_damage = None
+        self.chaos_min = weapon_stats['chaos damage min range text']
+        self.chaos_max = weapon_stats['chaos damage max range text']
+
+        self.cold_min = weapon_stats['cold damage min range text']
+        self.cold_max = weapon_stats['cold damage max range text']
+        
+
+        self.fire_min = weapon_stats['fire damage min range text']
+        self.fire_max = weapon_stats['fire damage max range text']
+
+        self.lightning_min = weapon_stats['lightning damage min range text']
+        self.lightning_max = weapon_stats['lightning damage max range text']
+
+        self.physical_min = weapon_stats['physical damage min range text']
+        self.physical_max = weapon_stats['physical damage max range text']
+
         self.range = f"{weapon_stats['range range text']}"
         self.critical_chance = f"{weapon_stats['critical strike chance range text']}"
         self.quality = "+20%"
+    
+    @property
+    def chaos_damage(self):
+        if self.chaos_max != "0":
+            return f"{self.chaos_min}-{self.chaos_max}"
+        else:
+            return None
+
+    @property
+    def cold_damage(self):
+        if self.cold_max != "0":
+            return f"{self.cold_min}-{self.cold_max}"
+        else:
+            return None
+
+    @property
+    def fire_damage(self):
+        if self.fire_max != "0":
+            return f"{self.fire_min}-{self.fire_max}"
+        else:
+            return None
+
+    @property
+    def lightning_damage(self):
+        if self.lightning_max != "0":
+            return f"{self.lightning_min}-{self.lightning_max}"
+        else:
+            return None
+
+    @property
+    def physical_damage(self):
+        if self.physical_max != "0":
+            return f"{self.physical_min}-{self.physical_max}"
+        else:
+            return None
 
 
 class Armour(Item):

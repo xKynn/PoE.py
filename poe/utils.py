@@ -365,14 +365,10 @@ class ItemRender:
         art = Image.open(BytesIO(r.read()))
         art = art.convert('RGBA')
         item = Image.new('RGBA', self.div_frame.size, (255, 0, 0, 0))
-        print('center', self.div_frame.size[0]//2)
-        print(self.div_frame.size)
         cur = Cursor(self.div_frame.size[0]//2)
         cur.reset()
-        print('move x', (art.size[0]//2)*-1)
         cur.move_x((art.size[0]//2)*-1)
         cur.move_y(47)
-        print(cur.pos)
         item.alpha_composite(art, cur.pos)
         item.alpha_composite(self.div_frame, (0,0))
         cur.reset()
@@ -393,15 +389,26 @@ class ItemRender:
         cur.move_x((self.font.getsize(card.reward)[0] // 2) * -1)
         d.text(cur.pos, card.reward, fill=fill, font=self.font)
         cur.reset()
-        cur.y = 540
-        lore = unescape_to_list(card.lore)
-        for line in lore:
-            text = line
-            cur.move_y(STAT_SPACING)
-            cur.move_x((self.font.getsize(text)[0] // 2) * -1)
-            d.text(cur.pos, text, fill=UNIQUE_COLOR, font=self.lore_font)
-            cur.move_y(self.lore_font.getsize(text)[1])
-            cur.reset()
+        cur.y = 536
+        first_lore = unescape_to_list(card.lore)
+        for first_line in first_lore:
+            text = first_line
+            if len(text.split(' ')) > 7:
+                lore = text.split(' ')
+                sep_lore = [lore[x:x+7] for x in range(0, len(lore),7)]
+                for line in sep_lore:
+                    joined_line = ' '.join(line)
+                    cur.move_y(STAT_SPACING)
+                    cur.move_x((self.font.getsize(joined_line)[0] // 2) * -1)
+                    d.text(cur.pos, joined_line, fill=UNIQUE_COLOR, font=self.lore_font)
+                    cur.move_y(self.lore_font.getsize(joined_line)[1])
+                    cur.reset()
+            else:
+                cur.move_y(STAT_SPACING)
+                cur.move_x((self.font.getsize(text)[0] // 2) * -1)
+                d.text(cur.pos, text, fill=UNIQUE_COLOR, font=self.lore_font)
+                cur.move_y(self.lore_font.getsize(text)[1])
+                cur.reset()
         return item
 
     def render(self, poe_item):
@@ -574,11 +581,15 @@ def parse_pob_item(itemtext):
             pobitem['rarity_index'] = index
             continue
         elif line.startswith("Item Level"):
-            pobitem['statstart_index'] = index+3
+            if item[index+3].startswith('--'):
+                pobitem['statstart_index'] = index + 3
+            else:
+                pobitem['statstart_index'] = index + 1
         elif line.startswith("====="):
             pobitem['statstart_index'] = index
         elif line.startswith("Implicits:"):
-            pobitem['statstart_index'] = index
+            pobitem['implicits'] = int(line.split(': ')[1])
+            pobitem['statstart_index'] = index+pobitem['implicits']
         elif line.startswith("Requires"):
             pobitem['statstart_index'] = index
     if pobitem['rarity'].lower() in ['unique', 'rare']:
@@ -590,9 +601,222 @@ def parse_pob_item(itemtext):
     else:
         name = item[pobitem['rarity_index'] + 1]
         base = item[pobitem['rarity_index'] + 1]
+    if 'implicits' in pobitem:
+        implicits = item[pobitem['statstart_index'] - (pobitem['implicits']-1):][:pobitem['implicits']]
+    elif item[pobitem['statstart_index']-2].startswith('--') and 'Item Level' not in item[pobitem['statstart_index']-1]:
+        imp_end = "None"
+        for ind, stat in enumerate(item[pobitem['statstart_index']-1:]):
+            print(stat)
+            if stat.startswith('--'):
+                if item[pobitem['statstart_index']-1:][ind+1] not in ['Shaper Item', 'Elder Item']:
+                    imp_end = ind
+                    break
+        if imp_end != "None":
+            print(item[pobitem['statstart_index']-2:])
+            print(imp_end)
+            implicits = item[pobitem['statstart_index']-1:][0:imp_end]
+        else:
+            implicits = []
+    else:
+        implicits = []
     stat_text = item[pobitem['statstart_index']+1:]
-    return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity']}
+    return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
+            'implicits': implicits}
 
+def modify_base_stats(item):
+    stats = {'flat es': 0, 'flat armour': 0, 'flat evasion': 0,
+             'inc es': 20, 'inc armour': 20, 'inc evasion': 20,
+             'aspd': 0,
+             'fire low': 0, 'fire max': 0, 'fire inc': 0, 'cold low': 0, 'cold max': 0,
+             'cold inc': 0, 'light low': 0, 'light max': 0, 'light inc': 0,
+             'chaos low': 0, 'chaos max': 0, 'chaos inc': 0,
+             'phys low': 0, 'phys max': 0, 'phys inc': 20,
+             'cc': 0, 'range': 0}
+    if item.implicits:
+        for stat in unescape_to_list(item.implicits):
+            text = stat.lower().replace('{crafted}', '')
+            if ' per ' in text or ' if ' in text:
+                continue
+            if " to " in text:
+                if 'armour' in text:
+                    stats['flat armour'] += int(text.split(' ')[0][1:])
+                elif 'evasion rating' in text:
+                    stats['flat evasion'] += int(text.split(' ')[0][1:])
+                elif 'maximum energy shield' in text:
+                    stats['flat es'] += int(text.split(' ')[0][1:])
+                elif 'weapon range' in text:
+                    stats['range'] += int(text.split(' ')[0][1:])
+                if "damage" in text:
+                    k = None
+                    if 'lightning' in text:
+                        k = 'light'
+                    if 'cold' in text:
+                        k = 'cold'
+                    if 'fire' in text:
+                        k = 'fire'
+                    if 'chaos' in text:
+                        k = 'chaos'
+                    if 'physical' in text:
+                        k = 'phys'
+                    if k:
+                        stats[f'{k} low'] += int(text.split(' to ')[0].split(' ')[-1])
+                        stats[f'{k} max'] += int(text.split(' to ')[1].split(' ')[0])
+            elif " increased " in text:
+                if "armour" in text:
+                    stats['inc armour'] += int(text.split(' ')[0][:-1])
+                if "evasion rating" in text:
+                    stats['inc evasion'] += int(text.split(' ')[0][:-1])
+                if "energy shield" in text:
+                    stats['inc evasion'] += int(text.split(' ')[0][:-1])
+                if "attack speed" in text:
+                    stats['aspd'] += int(text.split(' ')[0][:-1])
+                if "critical strike chance" in text:
+                    stats['cc'] += int(text.split(' ')[0][:-1])
+                if "damage" in text:
+                    if 'lightning' in text:
+                        stats['light inc'] += int(text.split(' ')[0][:-1])
+                    if 'cold' in text:
+                        stats['cold inc'] += int(text.split(' ')[0][:-1])
+                    if 'fire' in text:
+                        stats['fire inc'] += int(text.split(' ')[0][:-1])
+                    if 'chaos' in text:
+                        stats['chaos inc'] += int(text.split(' ')[0][:-1])
+                    if 'physical' in text:
+                        stats['phys inc'] += int(text.split(' ')[0][:-1])
+
+    if item.explicits:
+        for stat in unescape_to_list(item.explicits):
+            text = stat.lower().replace('{crafted}', '')
+            print(text)
+            if ' per ' in text or ' if ' in text:
+                continue
+            if " to " in text:
+                if 'armour' in text:
+                    stats['flat armour'] += int(text.split(' ')[0][1:])
+                elif 'evasion rating' in text:
+                    stats['flat evasion'] += int(text.split(' ')[0][1:])
+                elif 'maximum energy shield' in text:
+                    stats['flat es'] += int(text.split(' ')[0][1:])
+                elif 'weapon range' in text:
+                    stats['range'] += int(text.split(' ')[0][1:])
+                if "damage" in text:
+                    k = None
+                    if 'lightning' in text:
+                        k = 'light'
+                    if 'cold' in text:
+                        k = 'cold'
+                    if 'fire' in text:
+                        k = 'fire'
+                    if 'chaos' in text:
+                        k = 'chaos'
+                    if 'physical' in text:
+                        k = 'phys'
+                    if k:
+                        stats[f'{k} low'] += int(text.split(' to ')[0].split(' ')[-1])
+                        stats[f'{k} max'] += int(text.split(' to ')[1].split(' ')[0])
+            elif " increased " in text:
+                if "armour" in text:
+                    stats['inc armour'] += int(text.split(' ')[0][:-1])
+                if "evasion rating" in text:
+                    stats['inc evasion'] += int(text.split(' ')[0][:-1])
+                if "energy shield" in text:
+                    stats['inc evasion'] += int(text.split(' ')[0][:-1])
+                if "attack speed" in text:
+                    stats['aspd'] += int(text.split(' ')[0][:-1])
+                if "critical strike chance" in text:
+                    stats['cc'] += int(text.split(' ')[0][:-1])
+                if "damage" in text:
+                    if 'lightning' in text:
+                        stats['light inc'] += int(text.split(' ')[0][:-1])
+                    if 'cold' in text:
+                        stats['cold inc'] += int(text.split(' ')[0][:-1])
+                    if 'fire' in text:
+                        stats['fire inc'] += int(text.split(' ')[0][:-1])
+                    if 'chaos' in text:
+                        stats['chaos inc'] += int(text.split(' ')[0][:-1])
+                    if 'physical' in text:
+                        stats['phys inc'] += int(text.split(' ')[0][:-1])
+
+    print(stats)
+
+    if 'weapon' in item.tags:
+        if stats['aspd']:
+            _as = float(item.attack_speed)
+            item.attack_speed = str(_as + (stats['aspd']/100)*_as)
+        if stats['cc']:
+            cc = float(item.critical_chance.replace('%',''))
+            cc += cc*(stats['cc']/100)
+            item.critical_chance = f"{cc:.2}%"
+        if stats['range']:
+            i_range = int(item.range)
+            i_range += stats['range']
+            item.range = f"{i_range:.2}"
+        if stats['fire max'] or stats['fire inc']:
+            if stats['fire max']:
+                item.fire_min = stats['fire low']
+                item.fire_max = stats['fire max']
+            fire_m = int(item.fire_min)
+            fire_mx = int(item.fire_max)
+            fire_m += fire_m*(stats['fire inc']/100)
+            fire_mx += fire_mx*(stats['fire inc']/100)
+            item.fire_min = str(round(fire_m))
+            item.fire_max = str(round(fire_mx))
+        if stats['cold max'] or stats['cold inc']:
+            if stats['cold max']:
+                item.cold_min = stats['cold low']
+                item.cold_max = stats['cold max']
+            cold_m = int(item.cold_min)
+            cold_mx = int(item.cold_max)
+            cold_m += cold_m*(stats['cold inc']/100)
+            cold_mx += cold_mx*(stats['cold inc']/100)
+            item.cold_min = str(round(cold_m))
+            item.cold_max = str(round(cold_mx))
+        if stats['light max'] or stats['light inc']:
+            if stats['light max']:
+                item.lightning_min = stats['light low']
+                item.lightning_max = stats['light max']
+            lightning_m = int(item.lightning_min)
+            lightning_mx = int(item.lightning_max)
+            lightning_m += lightning_m*(stats['light inc']/100)
+            lightning_mx += lightning_mx*(stats['light inc']/100)
+            item.lightning_min = str(round(lightning_m))
+            item.lightning_max = str(round(lightning_mx))
+        if stats['chaos max'] or stats['chaos inc']:
+            if stats['chaos max']:
+                item.chaos_min = stats['chaos low']
+                item.chaos_max = stats['chaos max']
+            chaos_m = int(item.chaos_min)
+            chaos_mx = int(item.chaos_max)
+            chaos_m += chaos_m*(stats['chaos inc']/100)
+            chaos_mx += chaos_mx*(stats['chaos inc']/100)
+            item.chaos_min = str(round(chaos_m))
+            item.chaos_max = str(round(chaos_mx))
+        if stats['phys max'] or stats['phys inc']:
+            if stats['phys max']:
+                item.physical_min = stats['phys low']
+                item.physical_max = stats['phys max']
+            physical_m = int(item.physical_min)
+            physical_mx = int(item.physical_max)
+            physical_m += physical_m*(stats['phys inc']/100)
+            physical_mx += physical_mx*(stats['phys inc']/100)
+            item.physical_min = str(round(physical_m))
+            item.physical_max = str(round(physical_mx))
+    else:
+        if item.armour:
+            arm = int(item.armour)
+            arm += stats['flat armour']
+            arm += (stats['inc armour']/100) * arm
+            item.armour = str(round(arm))
+        if item.evasion:
+            ev = int(item.evasion)
+            ev += stats['flat evasion']
+            ev += (stats['inc evasion']/100) * ev
+            item.evasion = str(round(ev))
+        if item.energy_shield:
+            es = int(item.energy_shield)
+            es += stats['flat es']
+            es += (stats['inc es']/100) * es
+            item.energy_shield = str(round(es))
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     if item['rarity'].lower() == 'unique':
         wiki_base = cl.find_items({'name': item['name']})[0]
@@ -619,21 +843,18 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             wiki_base.implicits = '&lt;br&gt;'.join(item['implicits'])
         if item['explicits']:
             wiki_base.explicits = '&lt;br&gt;'.join(item['explicits'])
-        object_dict[slot] = wiki_base
-        return
-    if item['rarity'].lower() != 'unique':
-        if wiki_base.implicits:
-            implicits_list = unescape_to_list(wiki_base.implicits)
-            implicits_list = [' '.join(x.split(' ')[1:]) for x in implicits_list]
-            for implicit in implicits_list:
-                for pob_implicit in item['stats'][:2]:
-                    if implicit in pob_implicit:
-                        item['stats'].remove(pob_implicit)
-        wiki_base.explicits = '&lt;br&gt;'.join(item['stats'])
     else:
-        if wiki_base.implicits:
-            pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
-            wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
+        if item['implicits']:
+            wiki_base.implicits = '<br>'.join(item['implicits'])
+        if item['rarity'].lower() != 'unique':
+            wiki_base.explicits = '&lt;br&gt;'.join(item['stats'])
+        else:
+            if wiki_base.implicits:
+                pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
+                wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
+
+    if item.rarity.lower() != 'unique' and getattr(item, 'armour', "Absent") != "Absent":
+        modify_base_stats(wiki_base)
     object_dict[slot] = wiki_base
 
 def parse_pob_xml(xml: str, cl=None):
