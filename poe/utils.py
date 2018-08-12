@@ -742,7 +742,7 @@ def modify_base_stats(item):
     if 'weapon' in item.tags:
         if stats['aspd']:
             _as = float(item.attack_speed)
-            item.attack_speed = str(_as + (stats['aspd']/100)*_as)
+            item.attack_speed = f"{(_as + (stats['aspd']/100)*_as):.2}"
         if stats['cc']:
             cc = float(item.critical_chance.replace('%',''))
             cc += cc*(stats['cc']/100)
@@ -750,7 +750,7 @@ def modify_base_stats(item):
         if stats['range']:
             i_range = int(item.range)
             i_range += stats['range']
-            item.range = f"{i_range:.2}"
+            item.range = f"{i_range}"
         if stats['fire max'] or stats['fire inc']:
             if stats['fire max']:
                 item.fire_min = stats['fire low']
@@ -853,7 +853,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
                 pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
                 wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
 
-    if item.rarity.lower() != 'unique' and getattr(item, 'armour', "Absent") != "Absent":
+    if wiki_base.rarity.lower() != 'unique' and getattr(wiki_base, 'armour', "Absent") != "Absent":
         modify_base_stats(wiki_base)
     object_dict[slot] = wiki_base
 
