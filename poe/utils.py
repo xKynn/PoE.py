@@ -646,7 +646,7 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
-                if "damage" in text:
+                if "damage" in text and "reflect" not in text:
                     k = None
                     if 'lightning' in text:
                         k = 'light'
@@ -699,7 +699,7 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
-                if "damage" in text:
+                if "damage" in text and "reflect" not in text:
                     k = None
                     if 'lightning' in text:
                         k = 'light'
@@ -820,11 +820,15 @@ def modify_base_stats(item):
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     if item['rarity'].lower() == 'unique':
         wiki_base = cl.find_items({'name': item['name']})[0]
+    elif "Flask" in item['base']:
+        return
     else:
         #print("base", item['base'])
         try:
             if item['rarity'].lower() == 'magic' and item['name'] == item['base']:
-                if len(item['explicits']) == 1:
+                if '' in item['stats']:
+                    item['stats'].remove('')
+                if len(item['stats']) == 1:
                     if ' of ' in item['base']:
                         item['base'] = item['base'].rsplit(' of ')[0]
                     else:
