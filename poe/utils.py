@@ -936,7 +936,7 @@ def parse_pob_xml(xml: str, cl=None):
     stats['trees'] = {}
     for spec in tree.findall('Tree/Spec'):
         name = spec.attrib['title'] if 'title' in spec.attrib else 'Default'
-        stats['trees'][name] = spec.find('URL').text.replace('\t', '').replace('\n', '')
+        stats['trees'][name] = spec.find('URL').text.replace('\t', '').replace('\n', '').replace('/passive', '/fullscreen-passive')
     stats['jewels'] = []
     jewel_sockets = current_tree.findall('Sockets/Socket')
     for socket in jewel_sockets:
