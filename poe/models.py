@@ -98,7 +98,7 @@ class Weapon(Item):
         self.physical_min = weapon_stats['physical damage min range text']
         self.physical_max = weapon_stats['physical damage max range text']
 
-        self.range = f"{weapon_stats['range range text']}"
+        self.range = f"{weapon_stats['weapon range range text']}"
         self.critical_chance = f"{weapon_stats['critical strike chance range text']}"
         self.quality = "+20%"
     

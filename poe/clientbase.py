@@ -34,7 +34,8 @@ class ClientBase:
     @staticmethod
     def extract_cargoquery(data):
         extracted = []
-        #print(data)
+        # if 'cargoquery' not in data:
+        #     print(data)
         for item in data['cargoquery']:
             extracted.append(item['title'])
         return extracted

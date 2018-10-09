@@ -9,7 +9,7 @@
              "cold_damage_min_range_text", "cold_damage_max_range_text","fire_damage_min_range_text",
              "fire_damage_max_range_text", "lightning_damage_min_range_text",
              "lightning_damage_max_range_text", "physical_damage_min_range_text", "physical_damage_max_range_text",
-             "range_range_text", "critical_strike_chance_range_text"],
+             "weapon_range_range_text", "critical_strike_chance_range_text"],
   "armour": ["armour_range_text", "energy_shield_range_text", "evasion_range_text"],
   "gem": ["active_skill_name", "cast_time", "skill.description", "has_percentage_mana_cost",
           "has_reservation_mana_cost", "item_class_restriction", "max_level", "skill.name",

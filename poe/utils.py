@@ -1161,10 +1161,10 @@ def poe_skill_tree(hashes, asc: str = "None",
             ascendancy.append(asc_nodes[str(hash)])
 
     if return_keystones and return_asc:
-        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", tree_keystones, ascendancy
+        return f"https://www.pathofexile.com/fullscreen-passive-skill-tree/{post}", tree_keystones, ascendancy
     elif return_keystones and not return_asc:
-        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", tree_keystones
+        return f"https://www.pathofexile.com/fullscreen-passive-skill-tree/{post}", tree_keystones
     elif return_asc:
-        return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}", ascendancy
+        return f"https://www.pathofexile.com/fullscreen-passive-skill-tree/{post}", ascendancy
 
-    return f"https://www.pathofexile.com/passive-skill-tree/3.3.1/{post}"
+    return f"https://www.pathofexile.com/fullscreen-passive-skill-tree/{post}"
