@@ -85,9 +85,10 @@ class Weapon(Item):
         self.chaos_min = weapon_stats['chaos damage min range text']
         self.chaos_max = weapon_stats['chaos damage max range text']
 
+
+
         self.cold_min = weapon_stats['cold damage min range text']
         self.cold_max = weapon_stats['cold damage max range text']
-        
 
         self.fire_min = weapon_stats['fire damage min range text']
         self.fire_max = weapon_stats['fire damage max range text']
@@ -98,9 +99,10 @@ class Weapon(Item):
         self.physical_min = weapon_stats['physical damage min range text']
         self.physical_max = weapon_stats['physical damage max range text']
 
+
         self.range = f"{weapon_stats['weapon range range text']}"
         self.critical_chance = f"{weapon_stats['critical strike chance range text']}"
-        self.quality = "+20%"
+        self.quality = 20
     
     @property
     def chaos_damage(self):

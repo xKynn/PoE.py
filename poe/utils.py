@@ -15,7 +15,6 @@ from PIL import ImageFont
 from PIL import ImageOps
 
 from .constants import *
-from .models import Item
 
 
 # Simple cursor class that lets me handle moving around the image quite well
@@ -178,7 +177,7 @@ class ItemRender:
 
         if 'weapon' in item.tags:
             stats.append(self.prop(item.item_class, '', DESC_COLOR))
-            stats.append(self.prop("Quality: ", item.quality, PROP_COLOR))
+            stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
             if item.physical_damage:
                 stats.append(self.prop("Physical Damage: ", item.physical_damage, PROP_COLOR))
             if item.cold_damage or item.fire_damage or item.lightning_damage:
@@ -202,7 +201,7 @@ class ItemRender:
             stats.append(separator)
 
         elif 'armour' in item.tags:
-            stats.append(self.prop("Quality: ", item.quality, PROP_COLOR))
+            stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
             if item.armour:
                 stats.append(self.prop("Armour: ", item.armour, PROP_COLOR))
             if item.evasion:
@@ -667,7 +666,7 @@ def modify_base_stats(item):
                 if "evasion rating" in text:
                     stats['inc evasion'] += int(text.split(' ')[0][:-1])
                 if "energy shield" in text:
-                    stats['inc evasion'] += int(text.split(' ')[0][:-1])
+                    stats['inc es'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text:
                     stats['aspd'] += int(text.split(' ')[0][:-1])
                 if "critical strike chance" in text:
@@ -721,7 +720,7 @@ def modify_base_stats(item):
                 if "evasion rating" in text:
                     stats['inc evasion'] += int(text.split(' ')[0][:-1])
                 if "energy shield" in text:
-                    stats['inc evasion'] += int(text.split(' ')[0][:-1])
+                    stats['inc es'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text:
                     stats['aspd'] += int(text.split(' ')[0][:-1])
                 if "critical strike chance" in text:
@@ -814,7 +813,9 @@ def modify_base_stats(item):
             ev += (stats['inc evasion']/100) * ev
             item.evasion = str(round(ev))
         if item.energy_shield:
+            print(item.energy_shield)
             es = int(item.energy_shield)
+            print(stats['flat es'])
             es += stats['flat es']
             es += (stats['inc es']/100) * es
             item.energy_shield = str(round(es))
