@@ -106,35 +106,35 @@ class Weapon(Item):
     
     @property
     def chaos_damage(self):
-        if self.chaos_max != "0":
+        if self.chaos_max != "0" and self.chaos_max != 0:
             return f"{self.chaos_min}-{self.chaos_max}"
         else:
             return None
 
     @property
     def cold_damage(self):
-        if self.cold_max != "0":
+        if self.cold_max != "0" and self.cold_max != 0:
             return f"{self.cold_min}-{self.cold_max}"
         else:
             return None
 
     @property
     def fire_damage(self):
-        if self.fire_max != "0":
+        if self.fire_max != "0" and self.fire_max != 0:
             return f"{self.fire_min}-{self.fire_max}"
         else:
             return None
 
     @property
     def lightning_damage(self):
-        if self.lightning_max != "0":
+        if self.lightning_max != "0" and self.lightning_max != 0:
             return f"{self.lightning_min}-{self.lightning_max}"
         else:
             return None
 
     @property
     def physical_damage(self):
-        if self.physical_max != "0":
+        if self.physical_max != "0" and self.physical_max != 0:
             return f"{self.physical_min}-{self.physical_max}"
         else:
             return None

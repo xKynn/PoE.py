@@ -9,10 +9,12 @@ from collections import namedtuple
 from io import BytesIO
 
 import urllib3
+from collections import defaultdict
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
+from poe.models import Weapon, Armour
 
 from .constants import *
 
@@ -634,6 +636,7 @@ def modify_base_stats(item):
              'chaos low': 0, 'chaos max': 0, 'chaos inc': 0,
              'phys low': 0, 'phys max': 0, 'phys inc': int(item.quality),
              'cc': 0, 'range': 0}
+
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
             text = stat.lower().replace('{crafted}', '')
@@ -742,7 +745,7 @@ def modify_base_stats(item):
                         stats['phys inc'] += int(text.split(' ')[0][:-1])
 
     print(stats)
-
+    print(item.name, item.tags)
     if 'weapon' in item.tags:
         if stats['aspd']:
             _as = float(item.attack_speed)
@@ -826,6 +829,27 @@ def modify_base_stats(item):
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     if item['rarity'].lower() == 'unique':
         wiki_base = cl.find_items({'name': item['name']})[0]
+        print("WIKI BASE QUAL", wiki_base.quality)
+        if isinstance(wiki_base, Weapon):
+            print(item)
+            wiki_base.attack_speed = item['attack_speed']
+            wiki_base.chaos_min = item['chaos_min']
+            wiki_base.chaos_max = item['chaos_max']
+            wiki_base.cold_min = item['cold_min']
+            wiki_base.cold_max = item['cold_max']
+            wiki_base.fire_min = item['fire_min']
+            wiki_base.fire_max = item['fire_max']
+            wiki_base.lightning_min = item['lightning_min']
+            wiki_base.lightning_max = item['lightning_max']
+            wiki_base.physical_min = item['physical_min']
+            wiki_base.physical_max = item['physical_max']
+            wiki_base.range = item['range']
+            wiki_base.critical_chance = item['critical_chance']
+        else:
+            wiki_base.armour = item['armour']
+            wiki_base.evasion = item['evasion']
+            wiki_base.energy_shield = item['energy_shield']
+
     elif "Flask" in item['base']:
         return
     else:
@@ -865,8 +889,11 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     if 'quality' in item and item['quality']:
         wiki_base.quality = item['quality']
 
-    if wiki_base.rarity.lower() != 'unique' and getattr(wiki_base, 'armour', "Absent") != "Absent":
-        modify_base_stats(wiki_base)
+    if wiki_base.rarity.lower() != 'unique':
+        if wiki_base.quality == '':
+            print(wiki_base.name)
+        else:
+            modify_base_stats(wiki_base)
     object_dict[slot] = wiki_base
 
 def parse_pob_xml(xml: str, cl=None):
@@ -1001,9 +1028,45 @@ def parse_poe_char_api(json, cl):
     threads = []
     obj_dict = {}
     for item in json['items']:
-        char_item = {}
+        char_item = defaultdict(int)
         char_item['rarity'] = rarity[item['frameType']]
         char_item['name'] = item["name"].split('>>')[-1]
+        if 'properties' in item:
+            for prop in item['properties']:
+                if prop['name'] == "Quality":
+                    char_item['quality'] = int(prop['values'][0][0][1:-1])
+
+                # Weapon stats
+                if prop['name'] == "Physical Damage":
+                    char_item['physical_min'] = prop['values'][0][0].split('-')[0]
+                    char_item['physical_max'] = prop['values'][0][0].split('-')[1]
+                if prop['name'] == "Fire Damage":
+                    char_item['fire_min'] = prop['values'][0][0].split('-')[0]
+                    char_item['fire_max'] = prop['values'][0][0].split('-')[1]
+                if prop['name'] == "Cold Damage":
+                    char_item['cold_min'] = prop['values'][0][0].split('-')[0]
+                    char_item['cold_max'] = prop['values'][0][0].split('-')[1]
+                if prop['name'] == "Lightning Damage":
+                    char_item['lightning_min'] = prop['values'][0][0].split('-')[0]
+                    char_item['lightning_max'] = prop['values'][0][0].split('-')[1]
+                if prop['name'] == "Chaos Damage":
+                    char_item['chaos_min'] = prop['values'][0][0].split('-')[0]
+                    char_item['chaos_max'] = prop['values'][0][0].split('-')[1]
+                if prop['name'] == "Critical Strike Chance":
+                    char_item['critical_chance'] = prop['values'][0][0]
+                if prop['name'] == "Attacks per Second":
+                    char_item['attack_speed'] = prop['values'][0][0]
+                if prop['name'] == "Weapon Range":
+                    char_item['range'] = prop['values'][0][0]
+
+                #Armour Stats
+                if prop['name'] == "Armour":
+                    char_item['armour'] = prop['values'][0][0]
+                if prop['name'] == "Energy Shield":
+                    char_item['energy_shield'] = prop['values'][0][0]
+                if prop['name'] == "Evasion":
+                    char_item['evasion'] = prop['values'][0][0]
+
         if char_item['name'] == '':
             char_item['name'] = item["typeLine"].split('>>')[-1]
         ##print(char_item['name'], item['category'])
@@ -1039,6 +1102,9 @@ def parse_poe_char_api(json, cl):
             char_item['explicits'] = item['explicitMods']
         else:
             char_item['explicits'] = []
+        if 'craftedMods' in item:
+            for mod in item['craftedMods']:
+                char_item['explicits'].append("{crafted}"f"{mod}")
         if 'corrupted' in item:
             char_item['explicits'].append('Corrupted')
         if 'enchantMods' in item:
