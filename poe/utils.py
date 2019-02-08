@@ -627,12 +627,12 @@ def parse_pob_item(itemtext):
 
 def modify_base_stats(item):
     stats = {'flat es': 0, 'flat armour': 0, 'flat evasion': 0,
-             'inc es': item.quality, 'inc armour': item.quality, 'inc evasion': item.quality,
+             'inc es': int(item.quality), 'inc armour': int(item.quality), 'inc evasion': int(item.quality),
              'aspd': 0,
              'fire low': 0, 'fire max': 0, 'fire inc': 0, 'cold low': 0, 'cold max': 0,
              'cold inc': 0, 'light low': 0, 'light max': 0, 'light inc': 0,
              'chaos low': 0, 'chaos max': 0, 'chaos inc': 0,
-             'phys low': 0, 'phys max': 0, 'phys inc': item.quality,
+             'phys low': 0, 'phys max': 0, 'phys inc': int(item.quality),
              'cc': 0, 'range': 0}
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
@@ -862,7 +862,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             if wiki_base.implicits:
                 pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
                 wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
-    if item['quality']:
+    if 'quality' in item and item['quality']:
         wiki_base.quality = item['quality']
 
     if wiki_base.rarity.lower() != 'unique' and getattr(wiki_base, 'armour', "Absent") != "Absent":

@@ -158,7 +158,7 @@ class Armour(Item):
             self.energy_shield = armour_stats['energy shield range text']
         else:
             self.energy_shield = None
-        self.quality = "+20%"
+        self.quality = 20
 
 
 class Mod:
