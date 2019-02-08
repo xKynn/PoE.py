@@ -573,6 +573,7 @@ class ItemRender:
 
 def parse_pob_item(itemtext):
     item = itemtext.split('\n')
+    qualtext = None
     pobitem = {}
     for index, line in enumerate(item):
         if line.startswith("Rarity"):
@@ -591,6 +592,8 @@ def parse_pob_item(itemtext):
             pobitem['statstart_index'] = index+pobitem['implicits']
         elif line.startswith("Requires"):
             pobitem['statstart_index'] = index
+        elif line.startswith("Quality"):
+            qualtext = line.split("Quality: +")[1].split("%")[0]
     if pobitem['rarity'].lower() in ['unique', 'rare']:
         name = item[pobitem['rarity_index']+1]
         base = item[pobitem['rarity_index']+2]
@@ -620,16 +623,16 @@ def parse_pob_item(itemtext):
         implicits = []
     stat_text = item[pobitem['statstart_index']+1:]
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
-            'implicits': implicits}
+            'implicits': implicits, 'quality': int(qualtext)}
 
 def modify_base_stats(item):
     stats = {'flat es': 0, 'flat armour': 0, 'flat evasion': 0,
-             'inc es': 20, 'inc armour': 20, 'inc evasion': 20,
+             'inc es': item.quality, 'inc armour': item.quality, 'inc evasion': item.quality,
              'aspd': 0,
              'fire low': 0, 'fire max': 0, 'fire inc': 0, 'cold low': 0, 'cold max': 0,
              'cold inc': 0, 'light low': 0, 'light max': 0, 'light inc': 0,
              'chaos low': 0, 'chaos max': 0, 'chaos inc': 0,
-             'phys low': 0, 'phys max': 0, 'phys inc': 20,
+             'phys low': 0, 'phys max': 0, 'phys inc': item.quality,
              'cc': 0, 'range': 0}
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
@@ -720,6 +723,7 @@ def modify_base_stats(item):
                 if "evasion rating" in text:
                     stats['inc evasion'] += int(text.split(' ')[0][:-1])
                 if "energy shield" in text:
+                    print(text)
                     stats['inc es'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text:
                     stats['aspd'] += int(text.split(' ')[0][:-1])
@@ -858,6 +862,8 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             if wiki_base.implicits:
                 pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
                 wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
+    if item['quality']:
+        wiki_base.quality = item['quality']
 
     if wiki_base.rarity.lower() != 'unique' and getattr(wiki_base, 'armour', "Absent") != "Absent":
         modify_base_stats(wiki_base)
