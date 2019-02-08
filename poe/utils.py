@@ -646,7 +646,7 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
-                if "damage" in text and "reflect" not in text:
+                if "damage" in text and "reflect" not in text and "converted" not in text:
                     k = None
                     if 'lightning' in text:
                         k = 'light'
@@ -699,7 +699,7 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
-                if "damage" in text and "reflect" not in text:
+                if "damage" in text and "reflect" not in text and "converted" not in text:
                     k = None
                     if 'lightning' in text:
                         k = 'light'
@@ -712,6 +712,7 @@ def modify_base_stats(item):
                     if 'physical' in text:
                         k = 'phys'
                     if k:
+                        print(text)
                         stats[f'{k} low'] += int(text.split(' to ')[0].split(' ')[-1])
                         stats[f'{k} max'] += int(text.split(' to ')[1].split(' ')[0])
             elif " increased " in text:
