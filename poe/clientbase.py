@@ -141,7 +141,7 @@ class ClientBase:
         result_list = self.extract_cargoquery(data)
         final_list = []
         for item in result_list:
-            if 'weapon' in item['tags']:
+            if 'weapon' in item['tags'].split(','):
                 params = {
                     'tables': 'weapons',
                     'fields': ','.join(self.valid_weapon_filters),
@@ -150,7 +150,7 @@ class ClientBase:
                 data = req(url, params)
                 stats = self.extract_cargoquery(data)[0]
                 i = Weapon
-            elif 'armour' in item['tags']:
+            elif 'armour' in item['tags'].split(','):
                 params = {
                     'tables': 'armours',
                     'fields': ','.join(self.valid_armour_filters),
@@ -159,9 +159,9 @@ class ClientBase:
                 data = req(url, params)
                 stats = self.extract_cargoquery(data)[0]
                 i = Armour
-            elif 'gem' in item['tags']:
+            elif 'gem' in item['tags'].split(','):
                 current_item = self.get_gems({'name': item['name']}, req, url)[0]
-            elif 'divination_card' in item['tags']:
+            elif 'divination_card' in item['tags'].split(','):
                 params ={
                     'tables': 'divination_cards, stackables',
                     'join_on': 'divination_cards._pageName=stackables._pageName',
@@ -200,7 +200,7 @@ class ClientBase:
                 stats = None
                 i = Item
             #print(item['inventory icon'])
-            if 'gem' not in item['tags']:
+            if 'gem' not in item['tags'].split(','):
                 image_url = self.get_image_url(item['inventory icon'], req)
                 drops = ItemDrop(item['drop enabled'], item['drop level'],
                                  item['drop level maximum'], item['drop leagues'],
