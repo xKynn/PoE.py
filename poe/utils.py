@@ -179,7 +179,8 @@ class ItemRender:
 
         if 'weapon' in item.tags:
             stats.append(self.prop(item.item_class, '', DESC_COLOR))
-            stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
+            if item.quality:
+                stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
             if item.physical_damage:
                 stats.append(self.prop("Physical Damage: ", item.physical_damage, PROP_COLOR))
             if item.cold_damage or item.fire_damage or item.lightning_damage:
@@ -203,7 +204,8 @@ class ItemRender:
             stats.append(separator)
 
         elif 'armour' in item.tags:
-            stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
+            if item.quality:
+                stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
             if item.armour:
                 stats.append(self.prop("Armour: ", item.armour, PROP_COLOR))
             if item.evasion:
@@ -575,7 +577,7 @@ class ItemRender:
 
 def parse_pob_item(itemtext):
     item = itemtext.split('\n')
-    qualtext = None
+    qualtext = 0
     pobitem = {}
     for index, line in enumerate(item):
         if line.startswith("Rarity"):
@@ -886,8 +888,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             if wiki_base.implicits:
                 pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
                 wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
-    if 'quality' in item and item['quality']:
-        wiki_base.quality = item['quality']
+    wiki_base.quality = item['quality']
 
     if wiki_base.rarity.lower() != 'unique':
         if wiki_base.quality == '':
