@@ -150,14 +150,21 @@ class Armour(Item):
             self.armour = armour_stats['armour range text']
         else:
             self.armour = None
+
         if armour_stats['evasion range text'] != '0':
             self.evasion = armour_stats['evasion range text']
         else:
             self.evasion = None
+
         if armour_stats['energy shield range text'] != '0':
             self.energy_shield = armour_stats['energy shield range text']
         else:
             self.energy_shield = None
+
+        if 'block range average' in armour_stats and armour_stats['block range average']:
+            self.block = armour_stats['block range average']
+        else:
+            self.block = None
         self.quality = 20
 
 

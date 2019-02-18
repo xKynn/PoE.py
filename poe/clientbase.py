@@ -34,8 +34,8 @@ class ClientBase:
     @staticmethod
     def extract_cargoquery(data):
         extracted = []
-        # if 'cargoquery' not in data:
-        #     print(data)
+        #if 'cargoquery' not in data:
+        #    print(data)
         for item in data['cargoquery']:
             extracted.append(item['title'])
         return extracted
@@ -48,8 +48,8 @@ class ClientBase:
         where_params = []
         for key, val in where.items():
             #if key.lower() not in filters:
-             #   print(f"WARNING: {key} is not a valid filter, continuing without it.")
-              #  continue
+             #  print(f"WARNING: {key} is not a valid filter, continuing without it.")
+              # continue
             if 'skill_id' in filters and key == 'name':
                 key = 'skill_levels._pageName'
             if val[0] in self.operators:
@@ -151,12 +151,23 @@ class ClientBase:
                 stats = self.extract_cargoquery(data)[0]
                 i = Weapon
             elif 'armour' in item['tags'].split(','):
-                params = {
-                    'tables': 'armours',
-                    'fields': ','.join(self.valid_armour_filters),
-                    'where': f'_pageName="{item["name"]}"'
-                }
+                if 'shield' in item['tags'].split(','):
+                    params = {
+                        'tables': 'armours, shields',
+                        'join_on': 'armours._pageName=shields._pageName',
+                        'fields': f"{','.join(self.valid_armour_filters)},block_range_average",
+                        'where': f'shields._pageName="{item["name"]}"'
+                    }
+                else:
+                    params = {
+                        'tables': 'armours',
+                        'fields': ','.join(self.valid_armour_filters),
+                        'where': f'_pageName="{item["name"]}"'
+                    }
+                #Only extra stat a shield has from other armours is the block chance
+                #So I didn't add it to a filter key and blah blah
                 data = req(url, params)
+                #print(data)
                 stats = self.extract_cargoquery(data)[0]
                 i = Armour
             elif 'gem' in item['tags'].split(','):

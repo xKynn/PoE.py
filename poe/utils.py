@@ -206,6 +206,8 @@ class ItemRender:
         elif 'armour' in item.tags:
             if item.quality:
                 stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
+            if item.block:
+                stats.append(self.prop("Chance To Block: ", f"{item.block}%", PROP_COLOR))
             if item.armour:
                 stats.append(self.prop("Armour: ", item.armour, PROP_COLOR))
             if item.evasion:
