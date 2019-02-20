@@ -639,7 +639,9 @@ def modify_base_stats(item):
              'cold inc': 0, 'light low': 0, 'light max': 0, 'light inc': 0,
              'chaos low': 0, 'chaos max': 0, 'chaos inc': 0,
              'phys low': 0, 'phys max': 0, 'phys inc': int(item.quality),
-             'cc': 0, 'range': 0}
+             'cc': 0, 'range': 0,
+             'block': 0
+             }
 
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
@@ -655,6 +657,8 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
+                elif 'block' in text:
+                    stats['block'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and "reflect" not in text and "converted" not in text:
                     k = None
                     if 'lightning' in text:
@@ -677,6 +681,8 @@ def modify_base_stats(item):
                     stats['inc evasion'] += int(text.split(' ')[0][:-1])
                 if "energy shield" in text:
                     stats['inc es'] += int(text.split(' ')[0][:-1])
+                elif 'block' in text and 'block recovery' not in text:
+                    stats['block'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text:
                     stats['aspd'] += int(text.split(' ')[0][:-1])
                 if "critical strike chance" in text:
@@ -708,6 +714,8 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
+                elif 'block' in text:
+                    stats['block'] += int(text.split(' ')[0][1:])
                 if "damage" in text and "reflect" not in text and "converted" not in text:
                     k = None
                     if 'lightning' in text:
@@ -732,6 +740,8 @@ def modify_base_stats(item):
                 if "energy shield" in text:
                     print(text)
                     stats['inc es'] += int(text.split(' ')[0][:-1])
+                elif 'block' in text and 'block recovery' not in text:
+                    stats['block'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text:
                     stats['aspd'] += int(text.split(' ')[0][:-1])
                 if "critical strike chance" in text:
@@ -830,6 +840,10 @@ def modify_base_stats(item):
             es += stats['flat es']
             es += (stats['inc es']/100) * es
             item.energy_shield = str(round(es))
+        if "shield" in item.tags:
+            block = int(item.block)
+            block += stats['block']
+            item.block = str(round(block))
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     if item['rarity'].lower() == 'unique':
         wiki_base = cl.find_items({'name': item['name']})[0]
@@ -893,9 +907,11 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     wiki_base.quality = item['quality']
 
     if wiki_base.rarity.lower() != 'unique':
-        if wiki_base.quality == '':
+        if wiki_base.quality == '' or "ring" in wiki_base.tags or "amulet" not in wiki_base.tags\
+                or "belt" not in wiki_base.tags:
             print(wiki_base.name)
         else:
+            print("mod", wiki_base.name)
             modify_base_stats(wiki_base)
     object_dict[slot] = wiki_base
 
