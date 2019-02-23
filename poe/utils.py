@@ -184,6 +184,7 @@ class ItemRender:
             if item.physical_damage:
                 stats.append(self.prop("Physical Damage: ", item.physical_damage, PROP_COLOR))
             if item.cold_damage or item.fire_damage or item.lightning_damage:
+                print("ELES", item.lightning_damage)
                 # I'd like to do this a bit neater sometime in the future
                 eles = {}
                 if item.fire_damage:
@@ -199,7 +200,8 @@ class ItemRender:
                 stats.append(self.prop("Critical Strike Chance: ", item.critical_chance, None))
             if item.attack_speed:
                 stats.append(self.prop("Attacks Per Second: ", item.attack_speed, PROP_COLOR))
-            stats.append(self.prop("Weapon Range: ", item.range, None))
+            if int(item.range):
+                stats.append(self.prop("Weapon Range: ", item.range, None))
 
             stats.append(separator)
 
@@ -562,7 +564,7 @@ class ItemRender:
                     #print(stat.title, cur.pos, stat.color)
                     d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
                     cur.move_x(self.font.getsize(stat.title)[0])
-                    d.text(cur.pos, stat.text, fill=stat.color, font=self.font)
+                    d.text(cur.pos, str(stat.text), fill=stat.color, font=self.font)
                 else:
                     if stat.title.startswith('{'):
                         color = CRAFTED
@@ -599,7 +601,8 @@ def parse_pob_item(itemtext):
         elif line.startswith("Requires"):
             pobitem['statstart_index'] = index
         elif line.startswith("Quality"):
-            qualtext = line.split("Quality: +")[1].split("%")[0]
+            #print(line)
+            qualtext = line.split("Quality:")[1].strip().strip("%").strip("+")
     if pobitem['rarity'].lower() in ['unique', 'rare']:
         name = item[pobitem['rarity_index']+1]
         base = item[pobitem['rarity_index']+2]
@@ -845,28 +848,57 @@ def modify_base_stats(item):
             block += stats['block']
             item.block = str(round(block))
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
-    if item['rarity'].lower() == 'unique':
+    if item['rarity'].lower() == 'unique' and char_api:
         wiki_base = cl.find_items({'name': item['name']})[0]
         print("WIKI BASE QUAL", wiki_base.quality)
         if isinstance(wiki_base, Weapon):
             print(item)
-            wiki_base.attack_speed = item['attack_speed']
-            wiki_base.chaos_min = item['chaos_min']
-            wiki_base.chaos_max = item['chaos_max']
-            wiki_base.cold_min = item['cold_min']
-            wiki_base.cold_max = item['cold_max']
-            wiki_base.fire_min = item['fire_min']
-            wiki_base.fire_max = item['fire_max']
-            wiki_base.lightning_min = item['lightning_min']
-            wiki_base.lightning_max = item['lightning_max']
-            wiki_base.physical_min = item['physical_min']
-            wiki_base.physical_max = item['physical_max']
-            wiki_base.range = item['range']
-            wiki_base.critical_chance = item['critical_chance']
-        else:
-            wiki_base.armour = item['armour']
-            wiki_base.evasion = item['evasion']
-            wiki_base.energy_shield = item['energy_shield']
+            wiki_base.attack_speed = item.get('attack_speed', 0)
+            wiki_base.chaos_min = item.get('chaos_min', 0)
+            wiki_base.chaos_max = item.get('chaos_max', 0)
+            wiki_base.cold_min = item.get('cold_min', 0)
+            wiki_base.cold_max = item.get('cold_max', 0)
+            wiki_base.fire_min = item.get('fire_min', 0)
+            wiki_base.fire_max = item.get('fire_max', 0)
+            wiki_base.lightning_min = item.get('lightning_min', 0)
+            wiki_base.lightning_max = item.get('lightning_max', 0)
+            wiki_base.physical_min = item.get('physical_min', 0)
+            wiki_base.physical_max = item.get('physical_max', 0)
+            wiki_base.range = item.get('range', 0)
+            wiki_base.critical_chance = item.get('critical_chance', 0)
+        elif isinstance(wiki_base, Armour):
+            print(wiki_base.name)
+            print(item)
+            wiki_base.armour = item.get('armour', 0)
+            wiki_base.evasion = item.get('evasion', 0)
+            wiki_base.energy_shield = item.get('energy_shield', 0)
+
+    elif item['rarity'].lower() == 'unique':
+        wiki_base = cl.find_items({'name': item['name']})[0]
+        real_base = cl.find_items({'name': item['base']})[0]
+        if isinstance(wiki_base, Weapon):
+            print(item)
+            wiki_base.attack_speed = real_base.attack_speed
+            wiki_base.chaos_min = real_base.chaos_min
+            wiki_base.chaos_max = real_base.chaos_max
+            wiki_base.cold_min = real_base.cold_min
+            wiki_base.cold_max = real_base.cold_max
+            wiki_base.fire_min = real_base.fire_min
+            wiki_base.fire_max = real_base.fire_max
+            wiki_base.lightning_min = real_base.lightning_min
+            wiki_base.lightning_max = real_base.lightning_max
+            if real_base.physical_min > wiki_base.physical_min:
+                wiki_base.physical_min = real_base.physical_min
+            if real_base.physical_min > wiki_base.physical_min:
+                wiki_base.physical_max = real_base.physical_max
+            wiki_base.range = real_base.range
+            wiki_base.critical_chance = real_base.critical_chance
+        elif isinstance(wiki_base, Armour):
+            print(wiki_base.name)
+            print(item)
+            wiki_base.armour = real_base.armour
+            wiki_base.evasion = real_base.evasion
+            wiki_base.energy_shield = real_base.energy_shield
 
     elif "Flask" in item['base']:
         return
@@ -896,19 +928,23 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
         if item['explicits']:
             wiki_base.explicits = '&lt;br&gt;'.join(item['explicits'])
     else:
+        try:
+            print(wiki_base.armour, wiki_base)
+        except:
+            pass
         if item['implicits']:
             wiki_base.implicits = '<br>'.join(item['implicits'])
-        if item['rarity'].lower() != 'unique':
-            wiki_base.explicits = '&lt;br&gt;'.join(item['stats'])
-        else:
-            if wiki_base.implicits:
-                pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
-                wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
+        if item['stats']:
+            wiki_base.explicits = '&lt;br&gt;'.join(item['stats'][:-1])
+        # if 1!= 1:
+        #     if wiki_base.implicits:
+        #         pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
+        #         wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
     wiki_base.quality = item['quality']
 
-    if wiki_base.rarity.lower() != 'unique':
-        if wiki_base.quality == '' or "ring" in wiki_base.tags or "amulet" not in wiki_base.tags\
-                or "belt" not in wiki_base.tags:
+    if wiki_base.rarity.lower() != 'unique' and char_api or char_api == False:
+        if wiki_base.quality == '' or "ring" in wiki_base.tags or "amulet" in wiki_base.tags\
+                or "belt" in wiki_base.tags or "quiver" in wiki_base.tags or "flask" in wiki_base.tags:
             print(wiki_base.name)
         else:
             print("mod", wiki_base.name)
