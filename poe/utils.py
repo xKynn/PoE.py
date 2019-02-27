@@ -90,6 +90,8 @@ class ItemRender:
         self.namebar_trans = Image.open(f'{_dir}//{self.flavor}_namebar_trans.png')
         self.separator = Image.open(f'{_dir}//{self.flavor}_separator.png')
         self.div_frame = Image.open(f'{_dir}//div_frame.png')
+        self.elder_badge = Image.open(f'{_dir}//elder_badge.png')
+        self.shaper_badge = Image.open(f'{_dir}//shaper_badge.png')
 
         # A namedtuple to handle properties.
         # This works fairly well except for Separators which is kinda hacky
@@ -426,6 +428,12 @@ class ItemRender:
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
         cur = Cursor(center_x)
+        if poe_item.shaper:
+            self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
+            self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
+        if poe_item.elder:
+            self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
+            self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
         item.paste(self.namebar_left, cur.pos)
         cur.move_x(self.namebar_left.size[0])
         transformed_namebar = self.namebar_trans.resize((item.size[0]-(self.namebar_left.size[0]*2),

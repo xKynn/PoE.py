@@ -30,7 +30,7 @@ class Requirements:
 class Item:
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
                  lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits,
-                 explicits, tags, icon, *args):
+                 explicits, tags, icon, shaper, elder, *args):
         self.base = base
         self.item_class = item_class
         self.name = name
@@ -48,6 +48,8 @@ class Item:
         self.explicits = explicits
         self.tags = tags
         self.icon = icon
+        self.shaper = shaper
+        self.elder = elder
 
     def __repr__(self):
         return f"<Item: name={self.name} rarity={self.rarity}>"
@@ -67,9 +69,10 @@ class DivCard(Item):
 class Prophecy(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
                  lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
-                 proph_data):
+                 shaper, elder, proph_data):
         super().__init__(base, item_class, name, rarity, size, drop, requirements,
-                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon)
+                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
+                         shaper, elder)
         self.prediction = proph_data['prediction text']
         self.objective = proph_data['objective']
         self.seal_cost = proph_data['seal cost']
@@ -77,9 +80,10 @@ class Prophecy(Item):
 class Weapon(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
                  lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
-                 weapon_stats):
+                 shaper, elder, weapon_stats):
         super().__init__(base, item_class, name, rarity, size, drop, requirements,
-                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon)
+                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
+                         shaper, elder)
 
         self.attack_speed = weapon_stats['attack speed range text']
         self.chaos_min = weapon_stats['chaos damage min range text']
@@ -142,10 +146,11 @@ class Weapon(Item):
 
 class Armour(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
-                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
-                 armour_stats):
+                 lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon, shaper,
+                 elder, armour_stats):
         super().__init__(base, item_class, name, rarity, size, drop, requirements,
-                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon)
+                         lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
+                         shaper, elder)
         if armour_stats['armour range text'] != '0':
             self.armour = armour_stats['armour range text']
         else:

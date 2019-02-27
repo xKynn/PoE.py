@@ -29,6 +29,11 @@ class ClientBase:
 
     valid_armour_filters = filters['armour']
 
+    #No other way to tell if an item is an elder or shaper unique other than locally storing it at the moment
+    shaper_items = filters['shaper']
+
+    elder_items = filters['elder']
+
     operators = ['>', '<', '=']
 
     @staticmethod
@@ -88,7 +93,8 @@ class ClientBase:
                 'iiprop': 'url'
             }
         dat = req(query_url, param)
-        return dat['query']['pages'][list(dat['query']['pages'].keys())[0]]['imageinfo'][0]['url']
+        ic = dat['query']['pages'][list(dat['query']['pages'].keys())[0]].get('imageinfo', None)
+        return ic[0]['url'] if ic else ic
 
     def get_gems(self, where: dict, req, url):
         params = self.gem_param_gen(where)
@@ -141,6 +147,12 @@ class ClientBase:
         result_list = self.extract_cargoquery(data)
         final_list = []
         for item in result_list:
+            shaper = False
+            elder = False
+            if item['name'] in self.shaper_items:
+                shaper = True
+            if item['name'] in self.elder_items:
+                elder = True
             if 'weapon' in item['tags'].split(','):
                 params = {
                     'tables': 'weapons',
@@ -224,7 +236,7 @@ class ClientBase:
                                  item['flavour text'], item['help text'], self.bool_(item['is corrupted']),
                                  self.bool_(item['is relic']), item['alternate art inventory icons'],
                                  item['quality'], item['implicit stat text'], item['explicit stat text'],
-                                 item['tags'], image_url, stats)
+                                 item['tags'], image_url,shaper, elder, stats)
 
             final_list.append(current_item)
         return final_list
