@@ -76,13 +76,15 @@ class ClientBase:
         }
         return params
 
-    def item_param_gen(self, where):
+    def item_param_gen(self, where, limit):
         where_str = self._param_gen(where, self.valid_item_filters)
         params = {
             'tables': "items",
             'fields': f"{','.join(self.valid_item_filters)},_pageName=name",
             'where': where_str
         }
+        if limit:
+            params['limit'] = str(limit)
         return params
     @staticmethod
     def get_image_url(filename, req):
