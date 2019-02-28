@@ -428,12 +428,15 @@ class ItemRender:
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
         cur = Cursor(center_x)
-        if poe_item.shaper:
-            self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
-            self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
-        if poe_item.elder:
-            self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
-            self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
+        try:
+            if poe_item.shaper:
+                self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
+                self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
+            if poe_item.elder:
+                self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
+                self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
+        except AttributeError:
+            pass
         item.paste(self.namebar_left, cur.pos)
         cur.move_x(self.namebar_left.size[0])
         transformed_namebar = self.namebar_trans.resize((item.size[0]-(self.namebar_left.size[0]*2),
@@ -590,7 +593,7 @@ class ItemRender:
 def parse_pob_item(itemtext):
     item = itemtext.split('\n')
     qualtext = 0
-    pobitem = {}
+    pobitem = {'special': None}
     for index, line in enumerate(item):
         if line.startswith("Rarity"):
             pobitem['rarity'] = line.split(' ')[1].title()
@@ -610,7 +613,7 @@ def parse_pob_item(itemtext):
             pobitem['statstart_index'] = index
         elif line.startswith("Quality"):
             #print(line)
-            qualtext = line.split("Quality:")[1].strip().strip("%").strip("+")
+            qualtext = line.split("Quality:")[1].strip().split(" ")[0].strip("%").strip("+")
     if pobitem['rarity'].lower() in ['unique', 'rare']:
         name = item[pobitem['rarity_index']+1]
         base = item[pobitem['rarity_index']+2]
@@ -639,8 +642,14 @@ def parse_pob_item(itemtext):
     else:
         implicits = []
     stat_text = item[pobitem['statstart_index']+1:]
+    if item[-1].strip() == "Shaper Item":
+        pobitem['special'] = "shaper"
+        stat_text.pop()
+    elif item[-1].strip() == "Elder Item":
+        pobitem['special'] = "elder"
+        stat_text.pop()
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
-            'implicits': implicits, 'quality': int(qualtext)}
+            'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special']}
 
 def modify_base_stats(item):
     stats = {'flat es': 0, 'flat armour': 0, 'flat evasion': 0,
@@ -957,6 +966,11 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
         else:
             print("mod", wiki_base.name)
             modify_base_stats(wiki_base)
+    if item['special']:
+        if item['special'] == "shaper":
+            wiki_base.shaper = True
+        elif item['special'] == "elder":
+            wiki_base.elder = True
     object_dict[slot] = wiki_base
 
 def parse_pob_xml(xml: str, cl=None):
