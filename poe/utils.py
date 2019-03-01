@@ -18,6 +18,7 @@ from poe.models import Weapon, Armour
 
 from .constants import *
 
+re_range = re.compile('\(.+?\)')
 
 # Simple cursor class that lets me handle moving around the image quite well
 # also get around the hassle of maintaining position and adding and subtracting.
@@ -314,7 +315,7 @@ class ItemRender:
             stats.append(self.prop("Gem Help", "colour to gain this skill. Right click to", DESC_COLOR))
             stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
         if 'gem' not in item.tags and item.base != "Prophecy":
-          
+
             if item.implicits:
                 implicits = unescape_to_list(item.implicits)
             else:
@@ -325,7 +326,7 @@ class ItemRender:
 
             else:
                 explicits = None
-            
+
             if explicits and explicits[0].startswith('{'):
                 implicits = [explicits[0]]
                 explicits.pop(0)
@@ -335,9 +336,9 @@ class ItemRender:
                         stats.append(self.prop(implicit.replace('{crafted}',''), '', CRAFTED))
                     else:
                         stats.append(self.prop(implicit, '', PROP_COLOR))
-                    
+
                 stats.append(separator)
-            
+
             if explicits:
                 for explicit in explicits:
                     if explicit.lower() == "corrupted":
@@ -593,11 +594,40 @@ class ItemRender:
 def parse_pob_item(itemtext):
     item = itemtext.split('\n')
     qualtext = 0
+    variant = None
     pobitem = {'special': None}
     for index, line in enumerate(item):
+        if "{variant:" in line:
+            variant_now = line[line.index("t:") + 2:line.index("}")].split(',')
+            if variant not in variant_now:
+                item.pop(index)
+                continue
+            line = item[index] = line.split("}", 1)[1]
+
+        if "{range:" in line:
+            try:
+                percent = float(line[line.index("e:")+2:line.index("}")])
+            except:
+                print(line)
+            txt = line.split("}")[1]
+            matches = re_range.findall(txt)
+            for match in matches:
+                stat = match[1:-1]
+                separator = stat.find('-', 1)
+                range_start = stat[:separator]
+                range_end = stat[separator + 1:]
+                if '.' in range_start or '.' in range_end:
+                    calc_stat = float(percent*float(range_end))
+                else:
+                    calc_stat = int(percent*float(range_end))
+                txt = txt.replace(match, str(calc_stat))
+            item[index] = txt
         if line.startswith("Rarity"):
             pobitem['rarity'] = line.split(' ')[1].title()
             pobitem['rarity_index'] = index
+            continue
+        elif line.startswith("Selected Variant"):
+            variant = line.split(": ")[1]
             continue
         elif line.startswith("Item Level"):
             if item[index+3].startswith('--'):
@@ -662,7 +692,8 @@ def modify_base_stats(item):
              'cc': 0, 'range': 0,
              'block': 0
              }
-
+    if item.name.startswith("Chin"):
+        print(item.physical_max, item.physical_min)
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
             text = stat.lower().replace('{crafted}', '')
@@ -833,6 +864,7 @@ def modify_base_stats(item):
             item.chaos_min = str(round(chaos_m))
             item.chaos_max = str(round(chaos_mx))
         if stats['phys max'] or stats['phys inc']:
+            print(item.name, item.physical_min)
             if stats['phys max']:
                 item.physical_min = stats['phys low']
                 item.physical_max = stats['phys max']
@@ -906,7 +938,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             wiki_base.lightning_max = real_base.lightning_max
             if real_base.physical_min > wiki_base.physical_min:
                 wiki_base.physical_min = real_base.physical_min
-            if real_base.physical_min > wiki_base.physical_min:
+            if real_base.physical_max > wiki_base.physical_max:
                 wiki_base.physical_max = real_base.physical_max
             wiki_base.range = real_base.range
             wiki_base.critical_chance = real_base.critical_chance
