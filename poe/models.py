@@ -57,10 +57,10 @@ class Item:
 class DivCard(Item):
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
                  lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags, icon,
-                 div_data):
+                 shaper, elder, div_data):
         super().__init__(base, item_class, name, rarity, size, drop, requirements,
                          lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits, explicits, tags,
-                         icon)
+                         icon, shaper, elder)
         self.card_art = div_data['card_art']
         self.stack_size = div_data['stack_size']
         self.reward_flavor = div_data['reward_flavor']
