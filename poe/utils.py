@@ -617,9 +617,13 @@ def parse_pob_item(itemtext):
             matches = re_range.findall(txt)
             for match in matches:
                 stat = match[1:-1]
-                separator = stat.find('-', 1)
+                if " to " in stat:
+                    separator = stat.find(' to ', 1)
+                    range_end = stat[separator + 4:]
+                else:
+                    separator = stat.find('-', 1)
+                    range_end = stat[separator + 1:]
                 range_start = stat[:separator]
-                range_end = stat[separator + 1:]
                 if '.' in range_start or '.' in range_end:
                     calc_stat = float(percent*float(range_end))
                 else:
@@ -774,7 +778,7 @@ def modify_base_stats(item):
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
                 elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text:
-                    stats['block'] += int(text.split(' ')[0][1:])
+                    stats['block'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and "reflect" not in text and "converted" not in text:
                     k = None
                     if 'lightning' in text:
