@@ -700,12 +700,10 @@ def modify_base_stats(item):
              'cc': 0, 'range': 0,
              'block': 0
              }
-    if item.name.startswith("Chin"):
-        print(item.physical_max, item.physical_min)
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
             text = stat.lower().replace('{crafted}', '')
-            if not any(c.isdigit() for c in text):
+            if not any(c.isdigit() for c in text) or 'minion' in text or 'global' in text:
                 continue
             if ' per ' in text or ' if ' in text:
                 continue
@@ -764,7 +762,7 @@ def modify_base_stats(item):
         for stat in unescape_to_list(item.explicits):
             text = stat.lower().replace('{crafted}', '')
             print(text)
-            if not any(c.isdigit() for c in text):
+            if not any(c.isdigit() for c in text) or 'minion' in text or 'global' in text:
                 continue
             if ' per ' in text or ' if ' in text:
                 continue
