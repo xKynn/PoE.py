@@ -3,6 +3,9 @@ import urllib3
 urllib3.disable_warnings()
 import json
 
+from poe.utils import strip_unicode
+from urllib.parse import quote_plus
+
 from .clientbase import ClientBase
 from .exceptions import RequestException
 from .exceptions import NotFoundException
@@ -17,9 +20,17 @@ class Client(ClientBase):
         http = self.pool
         params['format'] = 'json'
         final_url = f"{url}"
+        if 'where' in params:
+            params['where'] = quote_plus(params['where'])
+        if 'titles' in params:
+            params['titles'] = quote_plus(params['titles'])
         for key, value in params.items():
             final_url = f"{final_url}&{key}={value.replace(' ', '%20')}"
-        r = http.request('GET', final_url)
+        #print(final_url, params)
+        try:
+            r = http.request('GET', final_url)
+        except:
+            return print(final_url, params)
         # print(final_url)
         try:
             resp = json.loads(r.data.decode('utf-8'))

@@ -60,7 +60,7 @@ class ClientBase:
             if val[0] in self.operators:
                 where_params.append(f'{key}{val}')
             else:
-                where_params.append(f'{key}%20LIKE%20%22{val}%22')
+                where_params.append(f'{key} LIKE "{val}"')
         where_str = " AND ".join(where_params)
         return where_str
 
@@ -107,7 +107,7 @@ class ClientBase:
             vendor_params = {
                 'tables': "vendor_rewards",
                 'fields': "act,classes",
-                'where': f'''reward=%22{gem['name']}%22'''
+                'where': f'''reward="{gem['name']}"'''
             }
             vendors_raw = req(url, params=vendor_params)
             vendors = self.extract_cargoquery(vendors_raw)
@@ -116,7 +116,7 @@ class ClientBase:
             stats_params = {
                 'tables': "skill_levels",
                 'fields': ','.join(self.valid_gem_level_filters),
-                'where': f'''_pageName=%22{gem['name']}%22'''
+                'where': f'''_pageName="{gem['name']}"'''
             }
             stats_raw = req(url, params=stats_params)
             stats_list = self.extract_cargoquery(stats_raw)
@@ -226,6 +226,7 @@ class ClientBase:
                 i = Item
             #print(item['inventory icon'])
             if 'gem' not in item['tags'].split(','):
+                print(item['inventory icon'])
                 image_url = self.get_image_url(item['inventory icon'], req)
                 drops = ItemDrop(item['drop enabled'], item['drop level'],
                                  item['drop level maximum'], item['drop leagues'],

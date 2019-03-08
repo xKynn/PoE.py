@@ -4,6 +4,7 @@ import json as js
 import os
 import re
 import threading
+import unicodedata
 import xml.etree.cElementTree as ET
 from collections import namedtuple
 from io import BytesIO
@@ -22,6 +23,9 @@ re_range = re.compile('\(.+?\)')
 
 # Simple cursor class that lets me handle moving around the image quite well
 # also get around the hassle of maintaining position and adding and subtracting.
+
+def strip_unicode(text: str):
+    return ''.join((c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn'))
 
 class Cursor:
 
@@ -697,9 +701,11 @@ def modify_base_stats(item):
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
             text = stat.lower().replace('{crafted}', '')
+            if not any(c.isdigit() for c in text):
+                continue
             if ' per ' in text or ' if ' in text:
                 continue
-            if " to " in text:
+            if " to " in text and "multiplier" not in text:
                 if 'armour' in text:
                     stats['flat armour'] += int(text.split(' ')[0][1:])
                 elif 'evasion rating' in text:
@@ -708,7 +714,7 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
-                elif 'block' in text:
+                elif 'block' in text and 'spell damage' not in text and 'block recovery' not in text:
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and "reflect" not in text and "converted" not in text:
                     k = None
@@ -732,7 +738,7 @@ def modify_base_stats(item):
                     stats['inc evasion'] += int(text.split(' ')[0][:-1])
                 if "energy shield" in text:
                     stats['inc es'] += int(text.split(' ')[0][:-1])
-                elif 'block' in text and 'block recovery' not in text:
+                elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text:
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text:
                     stats['aspd'] += int(text.split(' ')[0][:-1])
@@ -754,9 +760,11 @@ def modify_base_stats(item):
         for stat in unescape_to_list(item.explicits):
             text = stat.lower().replace('{crafted}', '')
             print(text)
+            if not any(c.isdigit() for c in text):
+                continue
             if ' per ' in text or ' if ' in text:
                 continue
-            if " to " in text:
+            if " to " in text and "multiplier" not in text:
                 if 'armour' in text:
                     stats['flat armour'] += int(text.split(' ')[0][1:])
                 elif 'evasion rating' in text:
@@ -765,7 +773,7 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text:
                     stats['range'] += int(text.split(' ')[0][1:])
-                elif 'block' in text:
+                elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text:
                     stats['block'] += int(text.split(' ')[0][1:])
                 if "damage" in text and "reflect" not in text and "converted" not in text:
                     k = None
@@ -791,7 +799,7 @@ def modify_base_stats(item):
                 if "energy shield" in text:
                     print(text)
                     stats['inc es'] += int(text.split(' ')[0][:-1])
-                elif 'block' in text and 'block recovery' not in text:
+                elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text:
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text:
                     stats['aspd'] += int(text.split(' ')[0][:-1])
