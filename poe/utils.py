@@ -232,11 +232,25 @@ class ItemRender:
             if item.radius:
                 stats.append(self.prop("Radius: ", item.radius, None))
             if not item.is_aura:
-                stats.append(self.prop("Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})", PROP_COLOR))
+                #Enlighten Enhance etc only go up to 10
+                try:
+                    stats.append(self.prop("Mana Cost: ",
+                                           f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})",
+                                           PROP_COLOR))
+                except KeyError:
+                    stats.append(self.prop("Mana Cost: ",
+                                           f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})",
+                                           PROP_COLOR))
             else:
                 stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
-            if item.stats_per_level[20]['stored uses']:
-                stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
+
+            #Enlighten Enhance etc only go up to 10
+            try:
+                if item.stats_per_level[20]['stored uses']:
+                    stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
+            except KeyError:
+                if item.stats_per_level[10]['stored uses']:
+                    stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
             if item.stats_per_level[0]['cooldown']:
                 stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
             if item.cast_time:
@@ -686,8 +700,17 @@ def parse_pob_item(itemtext):
     elif item[-1].strip() == "Elder Item":
         pobitem['special'] = "elder"
         stat_text.pop()
+    if '(' in base and ')' in base:
+        base = base[:base.find('(')-1]
+    if "Synthesised " in base:
+        base = base.replace("Synthesised ", "")
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
             'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special']}
+
+def assure_rangeless(stat):
+    if "-" in str(stat):
+        return stat.split('-')[0][1:]
+    return stat
 
 def modify_base_stats(item):
     stats = {'flat es': 0, 'flat armour': 0, 'flat evasion': 0,
@@ -705,7 +728,7 @@ def modify_base_stats(item):
             text = stat.lower().replace('{crafted}', '')
             if not any(c.isdigit() for c in text) or 'minion' in text or 'global' in text:
                 continue
-            if ' per ' in text or ' if ' in text:
+            if ' per ' in text or ' if ' in text or ',' in text:
                 continue
             if " to " in text and "multiplier" not in text:
                 if 'armour' in text:
@@ -764,7 +787,7 @@ def modify_base_stats(item):
             print(text)
             if not any(c.isdigit() for c in text) or 'minion' in text or 'global' in text:
                 continue
-            if ' per ' in text or ' if ' in text:
+            if ' per ' in text or ' if ' in text or ',' in text:
                 continue
             if " to " in text and "multiplier" not in text:
                 if 'armour' in text:
@@ -823,22 +846,23 @@ def modify_base_stats(item):
     print(item.name, item.tags)
     if 'weapon' in item.tags:
         if stats['aspd']:
-            _as = float(item.attack_speed)
+            _as = float(assure_rangeless(item.attack_speed))
             item.attack_speed = f"{(_as + (stats['aspd']/100)*_as):.2}"
         if stats['cc']:
-            cc = float(item.critical_chance.replace('%',''))
+            #cc = float(assure_rangeless(item.critical_chance.replace('%','')))
+            cc = 5.0
             cc += cc*(stats['cc']/100)
             item.critical_chance = f"{cc:.2}%"
         if stats['range']:
-            i_range = int(item.range)
+            i_range = int(assure_rangeless(item.range))
             i_range += stats['range']
             item.range = f"{i_range}"
         if stats['fire max'] or stats['fire inc']:
             if stats['fire max']:
                 item.fire_min = stats['fire low']
                 item.fire_max = stats['fire max']
-            fire_m = int(item.fire_min)
-            fire_mx = int(item.fire_max)
+            fire_m = int(assure_rangeless(item.fire_min))
+            fire_mx = int(assure_rangeless(item.fire_max))
             fire_m += fire_m*(stats['fire inc']/100)
             fire_mx += fire_mx*(stats['fire inc']/100)
             item.fire_min = str(round(fire_m))
@@ -847,8 +871,8 @@ def modify_base_stats(item):
             if stats['cold max']:
                 item.cold_min = stats['cold low']
                 item.cold_max = stats['cold max']
-            cold_m = int(item.cold_min)
-            cold_mx = int(item.cold_max)
+            cold_m = int(assure_rangeless(item.cold_min))
+            cold_mx = int(assure_rangeless(item.cold_max))
             cold_m += cold_m*(stats['cold inc']/100)
             cold_mx += cold_mx*(stats['cold inc']/100)
             item.cold_min = str(round(cold_m))
@@ -857,8 +881,8 @@ def modify_base_stats(item):
             if stats['light max']:
                 item.lightning_min = stats['light low']
                 item.lightning_max = stats['light max']
-            lightning_m = int(item.lightning_min)
-            lightning_mx = int(item.lightning_max)
+            lightning_m = int(assure_rangeless(item.lightning_min))
+            lightning_mx = int(assure_rangeless(item.lightning_max))
             lightning_m += lightning_m*(stats['light inc']/100)
             lightning_mx += lightning_mx*(stats['light inc']/100)
             item.lightning_min = str(round(lightning_m))
@@ -867,8 +891,8 @@ def modify_base_stats(item):
             if stats['chaos max']:
                 item.chaos_min = stats['chaos low']
                 item.chaos_max = stats['chaos max']
-            chaos_m = int(item.chaos_min)
-            chaos_mx = int(item.chaos_max)
+            chaos_m = int(assure_rangeless(item.chaos_min))
+            chaos_mx = int(assure_rangeless(item.chaos_max))
             chaos_m += chaos_m*(stats['chaos inc']/100)
             chaos_mx += chaos_mx*(stats['chaos inc']/100)
             item.chaos_min = str(round(chaos_m))
@@ -878,37 +902,40 @@ def modify_base_stats(item):
             if stats['phys max']:
                 item.physical_min = stats['phys low']
                 item.physical_max = stats['phys max']
-            physical_m = int(item.physical_min)
-            physical_mx = int(item.physical_max)
+            physical_m = int(assure_rangeless(item.physical_min))
+            physical_mx = int(assure_rangeless(item.physical_max))
             physical_m += physical_m*(stats['phys inc']/100)
             physical_mx += physical_mx*(stats['phys inc']/100)
             item.physical_min = str(round(physical_m))
             item.physical_max = str(round(physical_mx))
     else:
         if item.armour:
-            arm = int(item.armour)
+            arm = int(assure_rangeless(item.armour))
             arm += stats['flat armour']
             arm += (stats['inc armour']/100) * arm
             item.armour = str(round(arm))
         if item.evasion:
-            ev = int(item.evasion)
+            ev = int(assure_rangeless(item.evasion))
             ev += stats['flat evasion']
             ev += (stats['inc evasion']/100) * ev
             item.evasion = str(round(ev))
         if item.energy_shield:
             print(item.energy_shield)
-            es = int(item.energy_shield)
+            es = int(assure_rangeless(item.energy_shield))
             print(stats['flat es'])
             es += stats['flat es']
             es += (stats['inc es']/100) * es
             item.energy_shield = str(round(es))
         if "shield" in item.tags:
-            block = int(item.block)
+            block = int(assure_rangeless(item.block))
             block += stats['block']
             item.block = str(round(block))
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
     if item['rarity'].lower() == 'unique' and char_api:
+        wiki_base = None
         wiki_base = cl.find_items({'name': item['name']})[0]
+        if not wiki_base:
+            print(item)
         print("WIKI BASE QUAL", wiki_base.quality)
         if isinstance(wiki_base, Weapon):
             print(item)
@@ -1053,13 +1080,19 @@ def parse_pob_xml(xml: str, cl=None):
     for skill in skill_slots:
         if 'slot' in skill.attrib:
             slot = skill.attrib['slot']
-            equipped[slot]['gems'] = []
-            lst = equipped[slot]['gems']
+            if slot in equipped:
+                equipped[slot]['gems'] = []
+                lst = equipped[slot]['gems']
+            else:
+                continue
         else:
             if not 'gem_groups' in equipped:
                 equipped['gem_groups'] = {}
-            if not skill.getchildren()[0].attrib['nameSpec'] in equipped['gem_groups']:
-                equipped['gem_groups'][skill.getchildren()[0].attrib['nameSpec']] = []
+            try:
+                if not skill.getchildren()[0].attrib['nameSpec'] in equipped['gem_groups']:
+                    equipped['gem_groups'][skill.getchildren()[0].attrib['nameSpec']] = []
+            except:
+                continue
             lst = equipped['gem_groups'][skill.getchildren()[0].attrib['nameSpec']]
         gems = skill.getchildren()
         for gem in gems:
