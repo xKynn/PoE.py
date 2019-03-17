@@ -16,6 +16,8 @@ from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
 from poe.models import Weapon, Armour
+from poe.exceptions import OutdatedPoBException
+from poe.exceptions import AbsentItemBaseException
 
 from .constants import *
 
@@ -937,7 +939,10 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
         print(item)
     if item['rarity'].lower() == 'unique' and char_api:
         wiki_base = None
-        wiki_base = cl.find_items({'name': item['name']})[0]
+        try:
+            wiki_base = cl.find_items({'name': item['name']})[0]
+        except IndexError:
+            raise AbsentItemBaseException()
         if not wiki_base:
             print("no wik", item)
         print("WIKI BASE QUAL", wiki_base.quality)
@@ -1147,36 +1152,39 @@ def parse_pob_xml(xml: str, cl=None):
         stats['bandit'] = tree.find('Build').attrib['bandit']
     except:
         stats['bandit'] = "None"
-    stats['class'] = tree.find('Build').attrib.get('className', "None")
-    stats['ascendancy'] = tree.find('Build').attrib.get('ascendClassName', "None")
-    stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
-    stats['level'] = tree.find('Build').attrib['level']
-    stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
-    stats['effective_crit_chance'] = tree.find('Build/PlayerStat[@stat="CritChance"]').attrib['value']
-    stats['chance_to_hit'] = tree.find('Build/PlayerStat[@stat="HitChance"]').attrib['value']
-    stats['str'] = tree.find('Build/PlayerStat[@stat="Str"]').attrib['value']
-    stats['dex'] = tree.find('Build/PlayerStat[@stat="Dex"]').attrib['value']
-    stats['int'] = tree.find('Build/PlayerStat[@stat="Int"]').attrib['value']
-    stats['life'] = tree.find('Build/PlayerStat[@stat="Life"]').attrib['value']
-    stats['life_regen'] = tree.find('Build/PlayerStat[@stat="LifeRegen"]').attrib['value']
-    stats['es'] = tree.find('Build/PlayerStat[@stat="EnergyShield"]').attrib['value']
-    stats['es_regen'] = tree.find('Build/PlayerStat[@stat="EnergyShieldRegen"]').attrib['value']
     try:
-        stats['degen'] = tree.find('Build/PlayerStat[@stat="TotalDegen"]').attrib['value']
+        stats['class'] = tree.find('Build').attrib.get('className', "None")
+        stats['ascendancy'] = tree.find('Build').attrib.get('ascendClassName', "None")
+        stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
+        stats['level'] = tree.find('Build').attrib['level']
+        stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
+        stats['effective_crit_chance'] = tree.find('Build/PlayerStat[@stat="CritChance"]').attrib['value']
+        stats['chance_to_hit'] = tree.find('Build/PlayerStat[@stat="HitChance"]').attrib['value']
+        stats['str'] = tree.find('Build/PlayerStat[@stat="Str"]').attrib['value']
+        stats['dex'] = tree.find('Build/PlayerStat[@stat="Dex"]').attrib['value']
+        stats['int'] = tree.find('Build/PlayerStat[@stat="Int"]').attrib['value']
+        stats['life'] = tree.find('Build/PlayerStat[@stat="Life"]').attrib['value']
+        stats['life_regen'] = tree.find('Build/PlayerStat[@stat="LifeRegen"]').attrib['value']
+        stats['es'] = tree.find('Build/PlayerStat[@stat="EnergyShield"]').attrib['value']
+        stats['es_regen'] = tree.find('Build/PlayerStat[@stat="EnergyShieldRegen"]').attrib['value']
+        try:
+            stats['degen'] = tree.find('Build/PlayerStat[@stat="TotalDegen"]').attrib['value']
+        except AttributeError:
+            stats['degen'] = "0"
+        stats['evasion'] = tree.find('Build/PlayerStat[@stat="Evasion"]').attrib['value']
+        stats['block'] = tree.find('Build/PlayerStat[@stat="BlockChance"]').attrib['value']
+        stats['spell_block'] = tree.find('Build/PlayerStat[@stat="SpellBlockChance"]').attrib['value']
+        stats['dodge'] = tree.find('Build/PlayerStat[@stat="AttackDodgeChance"]').attrib['value']
+        stats['spell_dodge'] = tree.find('Build/PlayerStat[@stat="SpellDodgeChance"]').attrib['value']
+        stats['fire_res'] = tree.find('Build/PlayerStat[@stat="FireResist"]').attrib['value']
+        stats['cold_res'] = tree.find('Build/PlayerStat[@stat="ColdResist"]').attrib['value']
+        stats['light_res'] = tree.find('Build/PlayerStat[@stat="LightningResist"]').attrib['value']
+        stats['chaos_res'] = tree.find('Build/PlayerStat[@stat="ChaosResist"]').attrib['value']
+        stats['power_charges'] = tree.find('Build/PlayerStat[@stat="PowerChargesMax"]').attrib['value']
+        stats['frenzy_charges'] = tree.find('Build/PlayerStat[@stat="FrenzyChargesMax"]').attrib['value']
+        stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
     except AttributeError:
-        stats['degen'] = "0"
-    stats['evasion'] = tree.find('Build/PlayerStat[@stat="Evasion"]').attrib['value']
-    stats['block'] = tree.find('Build/PlayerStat[@stat="BlockChance"]').attrib['value']
-    stats['spell_block'] = tree.find('Build/PlayerStat[@stat="SpellBlockChance"]').attrib['value']
-    stats['dodge'] = tree.find('Build/PlayerStat[@stat="AttackDodgeChance"]').attrib['value']
-    stats['spell_dodge'] = tree.find('Build/PlayerStat[@stat="SpellDodgeChance"]').attrib['value']
-    stats['fire_res'] = tree.find('Build/PlayerStat[@stat="FireResist"]').attrib['value']
-    stats['cold_res'] = tree.find('Build/PlayerStat[@stat="ColdResist"]').attrib['value']
-    stats['light_res'] = tree.find('Build/PlayerStat[@stat="LightningResist"]').attrib['value']
-    stats['chaos_res'] = tree.find('Build/PlayerStat[@stat="ChaosResist"]').attrib['value']
-    stats['power_charges'] = tree.find('Build/PlayerStat[@stat="PowerChargesMax"]').attrib['value']
-    stats['frenzy_charges'] = tree.find('Build/PlayerStat[@stat="FrenzyChargesMax"]').attrib['value']
-    stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
+        raise OutdatedPoBException()
 
     return stats
 
