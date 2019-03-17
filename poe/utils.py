@@ -931,11 +931,15 @@ def modify_base_stats(item):
             block += stats['block']
             item.block = str(round(block))
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
+    try:
+        assert item['rarity'].lower()
+    except:
+        print(item)
     if item['rarity'].lower() == 'unique' and char_api:
         wiki_base = None
         wiki_base = cl.find_items({'name': item['name']})[0]
         if not wiki_base:
-            print(item)
+            print("no wik", item)
         print("WIKI BASE QUAL", wiki_base.quality)
         if isinstance(wiki_base, Weapon):
             print(item)
@@ -990,7 +994,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
         return
     else:
         #print("base", item['base'])
-        try:
+        if 1:
             if item['rarity'].lower() == 'magic' and item['name'] == item['base']:
                 if '' in item['stats']:
                     item['stats'].remove('')
@@ -1001,10 +1005,14 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
                         item['base'] = ' '.join(item['base'].split(' ')[1:])
                 else:
                     item['base'] = ' '.join(item['base'].split(' of ')[0].split(' ')[1:])
-
-            wiki_base = cl.find_items({'name': item['base']})[0]
-        except:
-            print(item)
+            wl = []
+            for w in item['base'].split(' '):
+                if not any(char.isdigit() for char in w):
+                    wl.append(w)
+            print(wl, item)
+            wiki_base = cl.find_items({'name': ' '.join(wl)})[0]
+        else:
+            print("no wik", item)
         wiki_base.rarity = item['rarity']
         wiki_base.name = item['name']
         wiki_base.base = item['base']
@@ -1067,7 +1075,10 @@ def parse_pob_xml(xml: str, cl=None):
                 tree_item.text = '\n'.join(lines)
             equipped[slot]['raw'] = tree_item.text.replace('\t', '')
             ##print(equipped[slot]['raw'])
-            equipped[slot]['parsed'] = parse_pob_item(equipped[slot]['raw'])
+            try:
+                equipped[slot]['parsed'] = parse_pob_item(equipped[slot]['raw'])
+            except:
+                continue
             item = equipped[slot]['parsed']
             t = threading.Thread(target=_get_wiki_base, args=(item, obj_dict, cl, slot))
             threads.append(t)
@@ -1136,8 +1147,8 @@ def parse_pob_xml(xml: str, cl=None):
         stats['bandit'] = tree.find('Build').attrib['bandit']
     except:
         stats['bandit'] = "None"
-    stats['class'] = tree.find('Build').attrib['className']
-    stats['ascendancy'] = tree.find('Build').attrib['ascendClassName']
+    stats['class'] = tree.find('Build').attrib.get('className', "None")
+    stats['ascendancy'] = tree.find('Build').attrib.get('ascendClassName', "None")
     stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
     stats['level'] = tree.find('Build').attrib['level']
     stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
