@@ -969,8 +969,11 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             wiki_base.energy_shield = item.get('energy_shield', 0)
 
     elif item['rarity'].lower() == 'unique':
-        wiki_base = cl.find_items({'name': item['name']})[0]
-        real_base = cl.find_items({'name': item['base']})[0]
+        try:
+            wiki_base = cl.find_items({'name': item['name']})[0]
+            real_base = cl.find_items({'name': item['base']})[0]
+        except IndexError:
+            raise AbsentItemBaseException()
         if isinstance(wiki_base, Weapon):
             print(item)
             wiki_base.attack_speed = real_base.attack_speed
@@ -1015,7 +1018,10 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
                 if not any(char.isdigit() for char in w):
                     wl.append(w)
             print(wl, item)
-            wiki_base = cl.find_items({'name': ' '.join(wl)})[0]
+            try:
+                wiki_base = cl.find_items({'name': ' '.join(wl)})[0]
+            except IndexError:
+                raise AbsentItemBaseException()
         else:
             print("no wik", item)
         wiki_base.rarity = item['rarity']
