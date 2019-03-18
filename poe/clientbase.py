@@ -84,7 +84,8 @@ class ClientBase:
         params = {
             'tables': "items",
             'fields': f"{','.join(self.valid_item_filters)},_pageName=name",
-            'where': where_str
+            'where': where_str,
+            'order_by': "name"
         }
         if limit:
             params['limit'] = str(limit)
