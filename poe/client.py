@@ -54,6 +54,11 @@ class Client(ClientBase):
     def find_gems(self, where: dict):
         return self.get_gems(where, self.request_gen, self.base_url)
 
+    def find_passives(self, where:dict, limit=None):
+        params = self.passive_param_gen(where, limit)
+        data = self.request_gen(self.base_url, params=params)
+        return self.passive_list_gen(data, self.request_gen, self.base_url, where)
+
     def search(self, name: str):
         search_params = {
             'tables': 'skill, items',

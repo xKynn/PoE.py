@@ -10,6 +10,7 @@ from .models import Gem
 from .models import DivCard
 from .models import ItemDrop
 from .models import Requirements
+from .models import PassiveSkill
 from .utils import reg
 from bs4 import BeautifulSoup as BS
 
@@ -28,6 +29,8 @@ class ClientBase:
     valid_weapon_filters = filters['weapon']
 
     valid_armour_filters = filters['armour']
+
+    valid_passive_filters = filters['passives']
 
     #No other way to tell if an item is an elder or shaper unique other than locally storing it at the moment
     shaper_items = filters['shaper']
@@ -86,6 +89,33 @@ class ClientBase:
         if limit:
             params['limit'] = str(limit)
         return params
+
+    def passive_param_gen(self, where, limit):
+        where_str = self._param_gen(where, self.valid_passive_filters)
+        params = {
+            'tables': "passive_skills",
+            'fields': f"{','.join(self.valid_passive_filters)}",
+            'where': where_str
+        }
+        if limit:
+            params['limit'] = str(limit)
+        return params
+
+    def passive_list_gen(self, data, req=None, url=None, where=None):
+        result_list = self.extract_cargoquery(data)
+        final_list = []
+        for passive in result_list:
+            asc_class = passive.get("ascendancy class", None)
+            flavor_text = passive.get("flavour text", None)
+            icon = self.get_image_url(passive['icon'], req)
+            is_keystone = bool(int(passive.get("is keystone", None)))
+            is_notable = bool(int(passive.get("is notable", None)))
+            name = passive.get("name", None)
+            reminder_text = passive.get("reminder text", None)
+            stat_text = passive.get("stat text", None)
+            final_list.append(PassiveSkill(asc_class, flavor_text, icon, is_keystone, is_notable,
+                                           name, reminder_text, stat_text))
+        return final_list
     @staticmethod
     def get_image_url(filename, req):
         query_url = "https://pathofexile.gamepedia.com/api.php?action=query"

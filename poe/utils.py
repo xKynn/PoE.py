@@ -1,6 +1,7 @@
 import binascii
 import html
 import json as js
+import math
 import os
 import re
 import threading
@@ -15,7 +16,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
-from poe.models import Weapon, Armour
+from poe.models import Weapon, Armour, PassiveSkill
 
 from .constants import *
 
@@ -97,6 +98,10 @@ class ItemRender:
         self.div_frame = Image.open(f'{_dir}//div_frame.png')
         self.elder_badge = Image.open(f'{_dir}//elder_badge.png')
         self.shaper_badge = Image.open(f'{_dir}//shaper_badge.png')
+        self.passive_frame = Image.open(f'{_dir}//passive_frame.png').convert('RGBA')
+        self.keystone_frame = Image.open(f'{_dir}//keystone_frame.png').convert('RGBA')
+        self.notable_frame = Image.open(f'{_dir}//notable_frame.png').convert('RGBA')
+        self.ascendancy_frame = Image.open(f'{_dir}//ascendancy_frame.png').convert('RGBA')
 
         # A namedtuple to handle properties.
         # This works fairly well except for Separators which is kinda hacky
@@ -116,6 +121,7 @@ class ItemRender:
         height = 0
         last_sep = False
         for stat in stats:
+            print(width)
             if stat.title == "Separator":
                 height += SEPARATOR_HEIGHT + SEPARATOR_SPACING
                 last_sep = True
@@ -141,17 +147,20 @@ class ItemRender:
                     stat_text += f" {attr.title()} {stat.text[attr]}" \
                                  f"{'' if list(stat.text.keys())[-1] == attr else ','}"
                 last_sep = False
-            elif stat.title == "Lore":
+            elif stat.title == "Lore" or stat.title == "Reminder":
                 if type(stat.text) is list:
                     ht = LINE_SPACING
                     for line in stat.text:
-                        #print(line)
-                        w = self.font.getsize(line)
+                        print(line)
+                        w = self.lore_font.getsize(line)
                         ht += STAT_HEIGHT
                         if w[0] > width:
                             width = w[0]
                     height += ht + STAT_SPACING
                 else:
+                    w = self.lore_font.getsize(stat.text)
+                    if w[0] > width:
+                        width = w[0]
                     height += STAT_HEIGHT
                 last_sep = False
                 continue
@@ -183,207 +192,254 @@ class ItemRender:
     def sort_stats(self, item):
         stats = list()
         separator = self.prop("Separator", None, None)
+        if not isinstance(item, PassiveSkill):
+            if 'weapon' in item.tags:
+                stats.append(self.prop(item.item_class, '', DESC_COLOR))
+                if item.quality:
+                    stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
+                if item.physical_damage:
+                    stats.append(self.prop("Physical Damage: ", item.physical_damage, PROP_COLOR))
+                if item.cold_damage or item.fire_damage or item.lightning_damage:
+                    print("ELES", item.lightning_damage)
+                    # I'd like to do this a bit neater sometime in the future
+                    eles = {}
+                    if item.fire_damage:
+                        eles['fire'] = item.fire_damage
+                    if item.cold_damage:
+                        eles['cold'] = item.cold_damage
+                    if item.lightning_damage:
+                        eles['lightning'] = item.lightning_damage
+                    stats.append(self.prop("Elemental Damage:", eles, None))
+                if item.chaos_damage:
+                    stats.append(self.prop("Chaos Damage: ", item.chaos_damage, CHAOS_COLOR))
+                if item.critical_chance:
+                    stats.append(self.prop("Critical Strike Chance: ", item.critical_chance, None))
+                if item.attack_speed:
+                    stats.append(self.prop("Attacks Per Second: ", item.attack_speed, PROP_COLOR))
+                if int(item.range):
+                    stats.append(self.prop("Weapon Range: ", item.range, None))
 
-        if 'weapon' in item.tags:
-            stats.append(self.prop(item.item_class, '', DESC_COLOR))
-            if item.quality:
-                stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
-            if item.physical_damage:
-                stats.append(self.prop("Physical Damage: ", item.physical_damage, PROP_COLOR))
-            if item.cold_damage or item.fire_damage or item.lightning_damage:
-                print("ELES", item.lightning_damage)
-                # I'd like to do this a bit neater sometime in the future
-                eles = {}
-                if item.fire_damage:
-                    eles['fire'] = item.fire_damage
-                if item.cold_damage:
-                    eles['cold'] = item.cold_damage
-                if item.lightning_damage:
-                    eles['lightning'] = item.lightning_damage
-                stats.append(self.prop("Elemental Damage:", eles, None))
-            if item.chaos_damage:
-                stats.append(self.prop("Chaos Damage: ", item.chaos_damage, CHAOS_COLOR))
-            if item.critical_chance:
-                stats.append(self.prop("Critical Strike Chance: ", item.critical_chance, None))
-            if item.attack_speed:
-                stats.append(self.prop("Attacks Per Second: ", item.attack_speed, PROP_COLOR))
-            if int(item.range):
-                stats.append(self.prop("Weapon Range: ", item.range, None))
+                stats.append(separator)
 
-            stats.append(separator)
+            elif 'armour' in item.tags:
+                if item.quality:
+                    stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
+                if item.block:
+                    stats.append(self.prop("Chance To Block: ", f"{item.block}%", PROP_COLOR))
+                if item.armour:
+                    stats.append(self.prop("Armour: ", item.armour, PROP_COLOR))
+                if item.evasion:
+                    stats.append(self.prop("Evasion: ", item.evasion, PROP_COLOR))
+                if item.energy_shield:
+                    stats.append(self.prop("Energy Shield: ", item.energy_shield, PROP_COLOR))
+                stats.append(separator)
 
-        elif 'armour' in item.tags:
-            if item.quality:
-                stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
-            if item.block:
-                stats.append(self.prop("Chance To Block: ", f"{item.block}%", PROP_COLOR))
-            if item.armour:
-                stats.append(self.prop("Armour: ", item.armour, PROP_COLOR))
-            if item.evasion:
-                stats.append(self.prop("Evasion: ", item.evasion, PROP_COLOR))
-            if item.energy_shield:
-                stats.append(self.prop("Energy Shield: ", item.energy_shield, PROP_COLOR))
-            stats.append(separator)
+            elif 'gem' in item.tags:
+                stats.append(self.prop(item.gem_tags.replace(',', ', '), '', DESC_COLOR))
+                if item.stats_per_level[0]['mana multiplier']:
+                    stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
+                if item.radius:
+                    stats.append(self.prop("Radius: ", item.radius, None))
+                if not item.is_aura:
+                    #Enlighten Enhance etc only go up to 10
+                    try:
+                        stats.append(self.prop("Mana Cost: ",
+                                               f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})",
+                                               PROP_COLOR))
+                    except KeyError:
+                        stats.append(self.prop("Mana Cost: ",
+                                               f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})",
+                                               PROP_COLOR))
+                else:
+                    stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
 
-        elif 'gem' in item.tags:
-            stats.append(self.prop(item.gem_tags.replace(',', ', '), '', DESC_COLOR))
-            if item.stats_per_level[0]['mana multiplier']:
-                stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
-            if item.radius:
-                stats.append(self.prop("Radius: ", item.radius, None))
-            if not item.is_aura:
                 #Enlighten Enhance etc only go up to 10
                 try:
-                    stats.append(self.prop("Mana Cost: ",
-                                           f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})",
-                                           PROP_COLOR))
+                    if item.stats_per_level[20]['stored uses']:
+                        stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
                 except KeyError:
-                    stats.append(self.prop("Mana Cost: ",
-                                           f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})",
-                                           PROP_COLOR))
-            else:
-                stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
-
-            #Enlighten Enhance etc only go up to 10
-            try:
-                if item.stats_per_level[20]['stored uses']:
-                    stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
-            except KeyError:
-                if item.stats_per_level[10]['stored uses']:
-                    stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
-            if item.stats_per_level[0]['cooldown']:
-                stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
-            if item.cast_time:
-                stats.append(self.prop("Cast Time: ", f"{item.cast_time} sec", None))
-            if item.stats_per_level[0]['critical strike chance']:
-                stats.append(self.prop("Critical Strike Chance: ", f"{item.stats_per_level[0]['critical strike chance']}%", None))
-            if item.stats_per_level[0]['damage effectiveness']:
-                stats.append(self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None))
-            stats.append(separator)
-
-        elif item.base == 'Prophecy':
-            if len(item.lore.split(' ')) > 7:
-                lore = item.lore.split(' ')
-                sep_lore = [lore[x:x+7] for x in range(0, len(lore),7)]
-                for line in sep_lore:
-                    stats.append(self.prop('Lore', ' '.join(line), UNIQUE_COLOR))
-            else:
-                stats.append(self.prop('Lore', item.lore, UNIQUE_COLOR))
-            stats.append(separator)
-            obj_list, matches = unescape_to_list(item.objective, ret_matches=True)
-            if 'while holding' in obj_list[0]:
-                itemname = matches[3].split('|')[1].strip(']]')
-                pre_holding = obj_list[0].split(' while holding ')[0]
-                new_obj = f"{pre_holding} while holding {itemname}"
-            else:
-                new_obj = obj_list[0]
-            if len(new_obj.split(' ')) > 7:
-                obj_split = new_obj.split(' ')
-                obj_sep = [obj_split[x:x+7] for x in range(0, len(obj_split),7)]
-                for line in obj_sep:
-                    stats.append(self.prop(' '.join(line), '', None))
-            else:
-                stats.append(self.prop(new_obj, '', None))
-            stats.append(separator)
-            stats.append(self.prop("Seal Cost: ", item.seal_cost, DESC_COLOR))
-
-
-
-        if item.requirements.has_reqs and item.base != "Prophecy":
-            reqs = {}
-            if item.requirements.level:
-                reqs['level'] = item.requirements.level
-            if item.requirements.str:
-                reqs['str'] = item.requirements.str
-            if item.requirements.dex:
-                reqs['dex'] = item.requirements.dex
-            if item.requirements.int:
-                reqs['int'] = item.requirements.int
-            stats.append(self.prop("Requires", reqs, None))
-            stats.append(separator)
-
-        if 'gem' in item.tags:
-            if len(item.description.split(' ')) > 7:
-                desc = item.description.split(' ')
-                description = [desc[x:x+7] for x in range(0, len(desc),7)]
-                for line in description:
-                    stats.append(self.prop(' '.join(line), '', GEM_COLOR))
-            else:
-                stats.append(self.prop(item.description, '', GEM_COLOR))
-            stats.append(separator)
-            if item.quality_bonus:
-                stats.append(self.prop("Per 1% Quality:", "", DESC_COLOR))
-                if '&lt;br&gt;' in item.quality_bonus:
-                    for bonus in item.quality_bonus.split('&lt;br&gt;'):
-                        stats.append(self.prop(bonus, "", PROP_COLOR))
-                else:
-                    stats.append(self.prop(item.quality_bonus, "", PROP_COLOR))
-                stats.append(separator)
-            stat_text = item.stat_text.split("&lt;br&gt;")
-            for stat in stat_text:
-                if len(stat.split(' ')) > 7:
-                    st = stat.split(' ')
-                    sep_stat = [st[x:x+7] for x in range(0, len(st),7)]
-                    for sep in sep_stat:
-                        stats.append(self.prop(' '.join(sep), "", PROP_COLOR))
-                else:
-                    stats.append(self.prop(stat, "", PROP_COLOR))
-            stats.append(separator)
-            stats.append(self.prop("Gem Help", "Place into an item socket of the right", DESC_COLOR))
-            stats.append(self.prop("Gem Help", "colour to gain this skill. Right click to", DESC_COLOR))
-            stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
-        if 'gem' not in item.tags and item.base != "Prophecy":
-
-            if item.implicits:
-                implicits = unescape_to_list(item.implicits)
-            else:
-                implicits = None
-
-            if item.explicits:
-                explicits = unescape_to_list(item.explicits)
-
-            else:
-                explicits = None
-
-            if explicits and explicits[0].startswith('{'):
-                implicits = [explicits[0]]
-                explicits.pop(0)
-            if implicits:
-                for implicit in implicits:
-                    if implicit.startswith('{'):
-                        stats.append(self.prop(implicit.replace('{crafted}',''), '', CRAFTED))
-                    else:
-                        stats.append(self.prop(implicit, '', PROP_COLOR))
-
+                    if item.stats_per_level[10]['stored uses']:
+                        stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
+                if item.stats_per_level[0]['cooldown']:
+                    stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
+                if item.cast_time:
+                    stats.append(self.prop("Cast Time: ", f"{item.cast_time} sec", None))
+                if item.stats_per_level[0]['critical strike chance']:
+                    stats.append(self.prop("Critical Strike Chance: ", f"{item.stats_per_level[0]['critical strike chance']}%", None))
+                if item.stats_per_level[0]['damage effectiveness']:
+                    stats.append(self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None))
                 stats.append(separator)
 
-            if explicits:
-                for explicit in explicits:
-                    if explicit.lower() == "corrupted":
-                        stats.append(self.prop(explicit, '', CORRUPTED))
-                    elif explicit.startswith('{'):
-                        stats.append(self.prop(explicit.replace('{crafted}',''), '', CRAFTED))
-                    else:
-                        stats.append(self.prop(explicit, '', PROP_COLOR))
+            elif item.base == 'Prophecy':
+                if len(item.lore.split(' ')) > 7:
+                    lore = item.lore.split(' ')
+                    sep_lore = [lore[x:x+7] for x in range(0, len(lore),7)]
+                    for line in sep_lore:
+                        stats.append(self.prop('Lore', ' '.join(line), UNIQUE_COLOR))
+                else:
+                    stats.append(self.prop('Lore', item.lore, UNIQUE_COLOR))
+                stats.append(separator)
+                obj_list, matches = unescape_to_list(item.objective, ret_matches=True)
+                if 'while holding' in obj_list[0]:
+                    itemname = matches[3].split('|')[1].strip(']]')
+                    pre_holding = obj_list[0].split(' while holding ')[0]
+                    new_obj = f"{pre_holding} while holding {itemname}"
+                else:
+                    new_obj = obj_list[0]
+                if len(new_obj.split(' ')) > 7:
+                    obj_split = new_obj.split(' ')
+                    obj_sep = [obj_split[x:x+7] for x in range(0, len(obj_split),7)]
+                    for line in obj_sep:
+                        stats.append(self.prop(' '.join(line), '', None))
+                else:
+                    stats.append(self.prop(new_obj, '', None))
+                stats.append(separator)
+                stats.append(self.prop("Seal Cost: ", item.seal_cost, DESC_COLOR))
 
-            if item.lore:
-                if stats[-1] is not separator:
+
+
+            if item.requirements.has_reqs and item.base != "Prophecy":
+                reqs = {}
+                if item.requirements.level:
+                    reqs['level'] = item.requirements.level
+                if item.requirements.str:
+                    reqs['str'] = item.requirements.str
+                if item.requirements.dex:
+                    reqs['dex'] = item.requirements.dex
+                if item.requirements.int:
+                    reqs['int'] = item.requirements.int
+                stats.append(self.prop("Requires", reqs, None))
+                stats.append(separator)
+
+            if 'gem' in item.tags:
+                if len(item.description.split(' ')) > 7:
+                    desc = item.description.split(' ')
+                    description = [desc[x:x+7] for x in range(0, len(desc),7)]
+                    for line in description:
+                        stats.append(self.prop(' '.join(line), '', GEM_COLOR))
+                else:
+                    stats.append(self.prop(item.description, '', GEM_COLOR))
+                stats.append(separator)
+                if item.quality_bonus:
+                    stats.append(self.prop("Per 1% Quality:", "", DESC_COLOR))
+                    if '&lt;br&gt;' in item.quality_bonus:
+                        for bonus in item.quality_bonus.split('&lt;br&gt;'):
+                            stats.append(self.prop(bonus, "", PROP_COLOR))
+                    else:
+                        stats.append(self.prop(item.quality_bonus, "", PROP_COLOR))
                     stats.append(separator)
-                lore = self.prop('Lore', unescape_to_list(item.lore), UNIQUE_COLOR)
-                stats.append(lore)
-        if item.icon:
-            http = urllib3.PoolManager()
-            def ico(icon):
-                r = http.request('GET', icon, preload_content=False)
-                im = Image.open(BytesIO(r.read()))
-                im = im.convert('RGBA')
-                return im
-            try:
-                if item.skill_icon:
-                    stats.append(self.prop('Image', ico(item.skill_icon), None))
-            except AttributeError:
-                pass
-            stats.append(self.prop('Image', ico(item.icon), None))
+                stat_text = item.stat_text.split("&lt;br&gt;")
+                for stat in stat_text:
+                    if len(stat.split(' ')) > 7:
+                        st = stat.split(' ')
+                        sep_stat = [st[x:x+7] for x in range(0, len(st),7)]
+                        for sep in sep_stat:
+                            stats.append(self.prop(' '.join(sep), "", PROP_COLOR))
+                    else:
+                        stats.append(self.prop(stat, "", PROP_COLOR))
+                stats.append(separator)
+                stats.append(self.prop("Gem Help", "Place into an item socket of the right", DESC_COLOR))
+                stats.append(self.prop("Gem Help", "colour to gain this skill. Right click to", DESC_COLOR))
+                stats.append(self.prop("Gem Help", "remove from a socket.", DESC_COLOR))
+            if 'gem' not in item.tags and item.base != "Prophecy":
+
+                if item.implicits:
+                    implicits = unescape_to_list(item.implicits)
+                else:
+                    implicits = None
+
+                if item.explicits:
+                    explicits = unescape_to_list(item.explicits)
+
+                else:
+                    explicits = None
+
+                if explicits and explicits[0].startswith('{'):
+                    implicits = [explicits[0]]
+                    explicits.pop(0)
+                if implicits:
+                    for implicit in implicits:
+                        if implicit.startswith('{'):
+                            stats.append(self.prop(implicit.replace('{crafted}',''), '', CRAFTED))
+                        else:
+                            stats.append(self.prop(implicit, '', PROP_COLOR))
+
+                    stats.append(separator)
+
+                if explicits:
+                    for explicit in explicits:
+                        if explicit.lower() == "corrupted":
+                            stats.append(self.prop(explicit, '', CORRUPTED))
+                        elif explicit.startswith('{'):
+                            stats.append(self.prop(explicit.replace('{crafted}',''), '', CRAFTED))
+                        else:
+                            stats.append(self.prop(explicit, '', PROP_COLOR))
+
+                if item.lore:
+                    if stats[-1] is not separator:
+                        stats.append(separator)
+                    lore = self.prop('Lore', unescape_to_list(item.lore), UNIQUE_COLOR)
+                    stats.append(lore)
+            if item.icon:
+                http = urllib3.PoolManager()
+
+                def ico(icon):
+                    r = http.request('GET', icon, preload_content=False)
+                    im = Image.open(BytesIO(r.read()))
+                    im = im.convert('RGBA')
+                    return im
+
+                try:
+                    if item.skill_icon:
+                        stats.append(self.prop('Image', ico(item.skill_icon), None))
+                except AttributeError:
+                    pass
+                stats.append(self.prop('Image', ico(item.icon), None))
+        else:
+            if item.name:
+                stats.append(self.prop('', item.name, DESC_COLOR))
+            if item.asc_class:
+                passive_type = f"{item.asc_class} Notable Passive Skill"
+            elif item.is_notable:
+                passive_type = "Notable Passive Skill"
+            elif item.is_keystone:
+                passive_type = "Keystone"
+            stats.append(self.prop(passive_type, '', NORMAL_COLOR))
+            for line in unescape_to_list(item.stat_text):
+                stats.append(self.prop(line, '', PROP_COLOR))
+            if item.icon:
+                http = urllib3.PoolManager()
+                def ico(icon):
+                    r = http.request('GET', icon, preload_content=False)
+                    im = Image.open(BytesIO(r.read()))
+                    im = im.convert('RGBA')
+                    return im
+                try:
+                    if item.skill_icon:
+                        stats.append(self.prop('Image', ico(item.skill_icon), None))
+                except AttributeError:
+                    pass
+                stats.append(self.prop('Image', ico(item.icon), None))
+
+            if item.reminder_text:
+                lines = unescape_to_list(item.reminder_text)
+                for line in lines:
+                    if len(line.split(' ')) > 7:
+                        lore = line.split(' ')
+                        sep_lore = [lore[x:x + 7] for x in range(0, len(lore), 7)]
+                        for line in sep_lore:
+                            stats.append(self.prop('Reminder', ' '.join(line), DESC_COLOR))
+                    else:
+                        stats.append(self.prop("Reminder", line, DESC_COLOR))
+
+            if item.flavor_text:
+                if len(item.flavor_text.split(' ')) > 7:
+                    lore = item.flavor_text.split(' ')
+                    sep_lore = [lore[x:x + 7] for x in range(0, len(lore), 7)]
+                    for line in sep_lore:
+                        stats.append(self.prop('Lore', ' '.join(line), UNIQUE_COLOR))
+                else:
+                    stats.append(self.prop("Lore", item.flavor_text, UNIQUE_COLOR))
 
         return stats
 
@@ -447,36 +503,44 @@ class ItemRender:
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
         cur = Cursor(center_x)
-        try:
-            if poe_item.shaper:
-                self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
-                self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
-            if poe_item.elder:
-                self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
-                self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
-        except AttributeError:
-            pass
-        item.paste(self.namebar_left, cur.pos)
-        cur.move_x(self.namebar_left.size[0])
-        transformed_namebar = self.namebar_trans.resize((item.size[0]-(self.namebar_left.size[0]*2),
-                                                         self.namebar_trans.size[1]))
-        item.paste(transformed_namebar, cur.pos)
-        cur.move_x(transformed_namebar.size[0])
-        item.paste(self.namebar_right, cur.pos)
+        if not isinstance(poe_item, PassiveSkill):
+            try:
+                if poe_item.shaper:
+                    self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
+                    self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
+                if poe_item.elder:
+                    self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
+                    self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
+            except AttributeError:
+                pass
+            item.paste(self.namebar_left, cur.pos)
+            cur.move_x(self.namebar_left.size[0])
+            transformed_namebar = self.namebar_trans.resize((item.size[0]-(self.namebar_left.size[0]*2),
+                                                             self.namebar_trans.size[1]))
+            item.paste(transformed_namebar, cur.pos)
+            cur.move_x(transformed_namebar.size[0])
+            item.paste(self.namebar_right, cur.pos)
         cur.reset()
         d = ImageDraw.Draw(item)
         cur.move_y(8)
         cur.move_x((self.header_font.getsize(poe_item.name)[0]//2)*-1)
         d.text(cur.pos, poe_item.name, fill=fill, font=self.header_font)
-        cur.move_y(2+self.header_font.getsize(poe_item.name)[1])
+        if not isinstance(poe_item, PassiveSkill):
+            cur.move_y(2+self.header_font.getsize(poe_item.name)[1])
+        else:
+            cur.move_y(self.header_font.getsize(poe_item.name)[1]//2)
         cur.reset()
-        if 'gem' not in poe_item.tags and poe_item.base != "Prophecy":
-            if poe_item.base not in poe_item.name:
-                cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
-                d.text(cur.pos, poe_item.base, fill=fill, font=self.header_font)
-                cur.reset()
-        cur.y = 0
-        cur.move_y(transformed_namebar.size[1])
+        if not isinstance(poe_item, PassiveSkill):
+            if 'gem' not in poe_item.tags and poe_item.base != "Prophecy":
+                if poe_item.base not in poe_item.name:
+                    cur.move_x((self.header_font.getsize(poe_item.base)[0]//2)*-1)
+                    d.text(cur.pos, poe_item.base, fill=fill, font=self.header_font)
+                    cur.reset()
+            cur.y = 0
+            cur.move_y(transformed_namebar.size[1])
+        else:
+            pass
+            #cur.move_y(self.header_font.getsize(poe_item.name)[1])
         #print(stats[-1].title)
         for stat in stats:
             if stat.title == "Separator":
@@ -530,7 +594,7 @@ class ItemRender:
                 #print("req", self.font.getsize(stat.title)[1])
                 cur.reset()
                 self.last_action = ""
-            elif stat.title == "Lore":
+            elif stat.title == "Lore" or stat.title == "Reminder":
                 if type(stat.text) is list:
                     for line in stat.text:
                         text = line
@@ -546,13 +610,41 @@ class ItemRender:
                     d.text(cur.pos, stat.text, fill=stat.color, font=self.lore_font)
                     cur.move_y(STAT_HEIGHT)
                     cur.reset()
-            elif stat.title == "Image":
+            elif stat.title == "Image" and not isinstance(poe_item, PassiveSkill):
                 cur.move_x((stat.text.size[0]//2)*-1)
                 cur.move_y(4)
                 #stat.text.show()
                 #item.show()
                 item.alpha_composite(stat.text, cur.pos)
                 cur.move_y(stat.text.size[1])
+                cur.reset()
+            elif stat.title == "Image" and isinstance(poe_item, PassiveSkill):
+                ic = stat.text
+                if poe_item.asc_class:
+                    frame = self.ascendancy_frame
+                elif poe_item.is_keystone:
+                    frame = self.keystone_frame
+                elif poe_item.is_notable:
+                    frame = self.notable_frame
+                else:
+                    frame = self.passive_frame
+                # if frame.size[0] > ic.size[0]:
+                #     frame = frame.resize((ic.size[0], ic.size[1]))
+                # else:
+                #     ic = ic.resize((frame.size[0], frame.size[1]))
+                icl = round(math.sqrt((frame.size[0]**2)/2))
+                old_s = ic.size[0]
+                ic = ic.resize((icl, icl))
+                #ic = ImageOps.expand(ic, border=(old_s-ic.size[0])//2,fill='black')
+                #ic.alpha_composite(frame, (0,0))
+                cur.move_x((ic.size[0]//2)*-1)
+                cur.move_y(30)
+                item.alpha_composite(ic, cur.pos)
+                cur.move_y(((old_s+26-ic.size[0])//2)*-1)
+                cur.reset()
+                cur.move_x((frame.size[0]//2)*-1)
+                item.alpha_composite(frame, cur.pos)
+                cur.move_y(frame.size[1])
                 cur.reset()
             elif stat.title == "Stored Uses":
                 text = f"Can Store {stat.text} Use(s)"
