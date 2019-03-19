@@ -125,7 +125,7 @@ class ItemRender:
         height = 0
         last_sep = False
         for stat in stats:
-            print(width)
+            #print(width)
             if stat.title == "Separator":
                 height += SEPARATOR_HEIGHT + SEPARATOR_SPACING
                 last_sep = True
@@ -155,7 +155,7 @@ class ItemRender:
                 if type(stat.text) is list:
                     ht = LINE_SPACING
                     for line in stat.text:
-                        print(line)
+                        #print(line)
                         w = self.lore_font.getsize(line)
                         ht += STAT_HEIGHT
                         if w[0] > width:
@@ -477,6 +477,11 @@ class ItemRender:
         cur.move_x((self.font.getsize(card.reward)[0] // 2) * -1)
         d.text(cur.pos, card.reward, fill=fill, font=self.font)
         cur.reset()
+        if card.is_corrupted:
+            cur.y = 384 + self.font.getsize(card.reward)[1] + 6
+            cur.move_x((self.font.getsize("Corrupted")[0] // 2) * -1)
+            d.text(cur.pos, "Corrupted", fill=CORRUPTED, font=self.font)
+            cur.reset()
         cur.y = 536
         first_lore = unescape_to_list(card.lore)
         for first_line in first_lore:
@@ -762,15 +767,20 @@ def parse_pob_item(itemtext):
         elif line.startswith("Quality"):
             #print(line)
             qualtext = line.split("Quality:")[1].strip().split(" ")[0].strip("%").strip("+")
-    if pobitem['rarity'].lower() in ['unique', 'rare']:
+    if pobitem['rarity'].lower() in ['unique', 'rare', 'relic']:
         name = item[pobitem['rarity_index']+1]
         base = item[pobitem['rarity_index']+2]
     elif pobitem['rarity'].lower() == 'magic':
+        print("magic in parse")
         name = item[pobitem['rarity_index']+1]
+        if "Superior" in name:
+            name = name.replace("Superior", "").strip()
         base = name.split('>>')[-1]
     else:
         name = item[pobitem['rarity_index'] + 1]
-        base = item[pobitem['rarity_index'] + 1]
+        if "Superior" in name:
+            name = name.replace("Superior", "").strip()
+        base = name
     if 'implicits' in pobitem:
         implicits = item[pobitem['statstart_index'] - (pobitem['implicits']-1):][:pobitem['implicits']]
     elif item[pobitem['statstart_index']-2].startswith('--') and 'Item Level' not in item[pobitem['statstart_index']-1]:
@@ -798,8 +808,10 @@ def parse_pob_item(itemtext):
         stat_text.pop()
     if '(' in base and ')' in base:
         base = base[:base.find('(')-1]
-    if "Synthesised " in base:
-        base = base.replace("Synthesised ", "")
+    if "Synthesised" in base:
+        base = base.replace("Synthesised", "").strip()
+    if "Synthesised" in name:
+        name = name.replace("Synthesised", "").strip()
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
             'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special']}
 
@@ -1031,7 +1043,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
         assert item['rarity'].lower()
     except:
         print(item)
-    if item['rarity'].lower() == 'unique' and char_api:
+    if item['rarity'].lower() in ['unique', 'relic'] and char_api:
         wiki_base = None
         try:
             wiki_base = cl.find_items({'name': item['name']})[0]
@@ -1061,12 +1073,15 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             wiki_base.armour = item.get('armour', 0)
             wiki_base.evasion = item.get('evasion', 0)
             wiki_base.energy_shield = item.get('energy_shield', 0)
+        if item['rarity'].lower() == 'relic':
+            wiki_base.rarity = 'relic'
 
-    elif item['rarity'].lower() == 'unique':
+    elif item['rarity'].lower() in ['unique', 'relic']:
         try:
             wiki_base = cl.find_items({'name': item['name']})[0]
             real_base = cl.find_items({'name': item['base']})[0]
         except IndexError:
+            print("Absent", item['name'])
             raise AbsentItemBaseException()
         if isinstance(wiki_base, Weapon):
             print(item)
@@ -1091,6 +1106,8 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             wiki_base.armour = real_base.armour
             wiki_base.evasion = real_base.evasion
             wiki_base.energy_shield = real_base.energy_shield
+        if item['rarity'].lower() == 'relic':
+            wiki_base.rarity = 'relic'
 
     elif "Flask" in item['base']:
         return
@@ -1115,6 +1132,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
             try:
                 wiki_base = cl.find_items({'name': ' '.join(wl)})[0]
             except IndexError:
+                print("Absent", item['name'])
                 raise AbsentItemBaseException()
         else:
             print("no wik", item)
@@ -1141,9 +1159,10 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
         #         wiki_base.implicits = '&lt;br&gt;'.join(pob_implicits)
     wiki_base.quality = item['quality']
 
-    if wiki_base.rarity.lower() != 'unique' and char_api or char_api == False:
+    if wiki_base.rarity.lower() not in ['unique', 'relic'] and char_api or char_api == False:
         if wiki_base.quality == '' or "ring" in wiki_base.tags or "amulet" in wiki_base.tags\
-                or "belt" in wiki_base.tags or "quiver" in wiki_base.tags or "flask" in wiki_base.tags:
+                or "belt" in wiki_base.tags or "quiver" in wiki_base.tags or "flask" in wiki_base.tags\
+                or "jewel" in wiki_base.tags:
             print(wiki_base.name)
         else:
             print("mod", wiki_base.name)
@@ -1280,9 +1299,18 @@ def parse_pob_xml(xml: str, cl=None):
         stats['cold_res'] = tree.find('Build/PlayerStat[@stat="ColdResist"]').attrib['value']
         stats['light_res'] = tree.find('Build/PlayerStat[@stat="LightningResist"]').attrib['value']
         stats['chaos_res'] = tree.find('Build/PlayerStat[@stat="ChaosResist"]').attrib['value']
-        stats['power_charges'] = tree.find('Build/PlayerStat[@stat="PowerChargesMax"]').attrib['value']
-        stats['frenzy_charges'] = tree.find('Build/PlayerStat[@stat="FrenzyChargesMax"]').attrib['value']
-        stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
+        try:
+            stats['power_charges'] = tree.find('Build/PlayerStat[@stat="PowerChargesMax"]').attrib['value']
+        except:
+            stats['power_charges'] = '3'
+        try:
+            stats['frenzy_charges'] = tree.find('Build/PlayerStat[@stat="FrenzyChargesMax"]').attrib['value']
+        except:
+            stats['frenzy_charges'] = '3'
+        try:
+            stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
+        except:
+            stats['endurance_charges'] ='3'
     except AttributeError:
         raise OutdatedPoBException()
 

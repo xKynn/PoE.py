@@ -228,6 +228,8 @@ class ClientBase:
                 card_art = self.get_image_url(data['card art'], req)
                 soup = BS(html.unescape(item['html']))
                 div_data = soup.select_one('span.divicard-reward span span')
+                if "[[Corrupted]]" in item['html']:
+                    item['is corrupted'] = True
                 reward_flavour = div_data.attrs['class'][1][1:]
                 if reward_flavour == 'currency':
                     reward_flavour = 'normal'

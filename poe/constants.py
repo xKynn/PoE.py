@@ -20,9 +20,15 @@ RARE_COLOR = (255, 255, 119)
 PROPH_COLOR = (181, 75, 255)
 CORRUPTED = (210, 0, 0)
 CRAFTED = (192, 242, 255)
+RELIC_COLOR = (83, 131, 88)
+WHITE = (255, 255, 255)
+DIVINATION = (0, 187, 255)
 flavor_color = {"unique": UNIQUE_COLOR,
                 "gem": GEM_COLOR,
+                "relic": RELIC_COLOR,
                 "normal": NORMAL_COLOR,
+                "white": WHITE,
+                "divination": DIVINATION,
                 "prophecy": PROPH_COLOR,
                 "rare": RARE_COLOR,
                 "magic": PROP_COLOR}
