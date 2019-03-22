@@ -507,10 +507,13 @@ class ItemRender:
     def render(self, poe_item):
         stats = self.sort_stats(poe_item)
         fill = flavor_color[self.flavor]
-        if self.header_font.getsize(poe_item.name) > self.header_font.getsize(poe_item.base):
+        try:
+            if self.header_font.getsize(poe_item.name) > self.header_font.getsize(poe_item.base):
+                header = poe_item.name
+            else:
+                header = poe_item.base
+        except AttributeError:
             header = poe_item.name
-        else:
-            header = poe_item.base
         box_size = self.calc_size(stats, header)
         #print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
