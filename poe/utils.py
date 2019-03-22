@@ -121,7 +121,7 @@ class ItemRender:
     # TODO:
     # 1. Maybe make less redundant later
     def calc_size(self, stats, header):
-        width = self.header_font.getsize(header)[0] + 6
+        width = self.header_font.getsize(header)[0] + (self.namebar_left.size[0]*2) + 4
         height = 0
         last_sep = False
         for stat in stats:
@@ -507,7 +507,11 @@ class ItemRender:
     def render(self, poe_item):
         stats = self.sort_stats(poe_item)
         fill = flavor_color[self.flavor]
-        box_size = self.calc_size(stats, poe_item.name)
+        if self.header_font.getsize(poe_item.name) > self.header_font.getsize(poe_item.base):
+            header = poe_item.name
+        else:
+            header = poe_item.base
+        box_size = self.calc_size(stats, header)
         #print('box size=', box_size, 'center', box_size[0]//2)
         center_x = box_size[0]//2
         item = Image.new('RGBA', box_size, color='black')
@@ -1130,9 +1134,9 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False):
                     wl.append(w)
             print(wl, item)
             try:
-                wiki_base = cl.find_items({'name': ' '.join(wl)})[0]
+                wiki_base = cl.find_items({'name': ' '.join(wl).replace("Synthesised", "").strip()})[0]
             except IndexError:
-                print("Absent", item['name'])
+                print("Absent", item)
                 raise AbsentItemBaseException()
         else:
             print("no wik", item)
