@@ -512,7 +512,7 @@ class ItemRender:
                 header = poe_item.name
             else:
                 header = poe_item.base
-        except AttributeError:
+        except (AttributeError, TypeError):
             header = poe_item.name
         box_size = self.calc_size(stats, header)
         #print('box size=', box_size, 'center', box_size[0]//2)
@@ -840,7 +840,7 @@ def modify_base_stats(item):
              }
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
-            text = stat.lower().replace('{crafted}', '')
+            text = stat.lower().replace('{crafted}', '').replace('{fractured}', '')
             if not any(c.isdigit() for c in text) or 'minion' in text or 'global' in text:
                 continue
             if ' per ' in text or ' if ' in text or ',' in text:
@@ -898,7 +898,7 @@ def modify_base_stats(item):
 
     if item.explicits:
         for stat in unescape_to_list(item.explicits):
-            text = stat.lower().replace('{crafted}', '')
+            text = stat.lower().replace('{crafted}', '').replace('{fractured}', '')
             print(text)
             if not any(c.isdigit() for c in text) or 'minion' in text or 'global' in text:
                 continue
