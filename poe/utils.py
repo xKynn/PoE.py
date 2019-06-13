@@ -96,17 +96,36 @@ class ItemRender:
         self.font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 15)
         self.lore_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCapsItalic.ttf', 15)
         self.header_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 20)
-        self.namebar_left = Image.open(f'{_dir}//{self.flavor}_namebar_left.png')
-        self.namebar_right = Image.open(f'{_dir}//{self.flavor}_namebar_right.png')
-        self.namebar_trans = Image.open(f'{_dir}//{self.flavor}_namebar_trans.png')
-        self.separator = Image.open(f'{_dir}//{self.flavor}_separator.png')
-        self.div_frame = Image.open(f'{_dir}//div_frame.png')
-        self.elder_badge = Image.open(f'{_dir}//elder_badge.png')
-        self.shaper_badge = Image.open(f'{_dir}//shaper_badge.png')
+        self.namebar_left = Image.open(f'{_dir}//{self.flavor}_namebar_left.png').convert('RGBA')
+        self.namebar_right = Image.open(f'{_dir}//{self.flavor}_namebar_right.png').convert('RGBA')
+        self.namebar_trans = Image.open(f'{_dir}//{self.flavor}_namebar_trans.png').convert('RGBA')
+        self.separator = Image.open(f'{_dir}//{self.flavor}_separator.png').convert('RGBA')
+        self.div_frame = Image.open(f'{_dir}//div_frame.png').convert('RGBA')
+        self.elder_badge = Image.open(f'{_dir}//elder_badge.png').convert('RGBA')
+        self.shaper_badge = Image.open(f'{_dir}//shaper_badge.png').convert('RGBA')
         self.passive_frame = Image.open(f'{_dir}//passive_frame.png').convert('RGBA')
         self.keystone_frame = Image.open(f'{_dir}//keystone_frame.png').convert('RGBA')
         self.notable_frame = Image.open(f'{_dir}//notable_frame.png').convert('RGBA')
         self.ascendancy_frame = Image.open(f'{_dir}//ascendancy_frame.png').convert('RGBA')
+        self.shaper_backgrounds = {
+            ('1', '1'): Image.open(f'{_dir}//shaper_bg_1x1.png').convert('RGBA'),
+            ('1', '2'): Image.open(f'{_dir}//shaper_bg_1x2.png').convert('RGBA'),
+            ('1', '3'): Image.open(f'{_dir}//shaper_bg_1x3.png').convert('RGBA'),
+            ('1', '4'): Image.open(f'{_dir}//shaper_bg_1x4.png').convert('RGBA'),
+            ('2', '1'): Image.open(f'{_dir}//shaper_bg_2x1.png').convert('RGBA'),
+            ('2', '2'): Image.open(f'{_dir}//shaper_bg_2x2.png').convert('RGBA'),
+            ('2', '3'): Image.open(f'{_dir}//shaper_bg_2x3.png').convert('RGBA'),
+            ('2', '4'): Image.open(f'{_dir}//shaper_bg_2x4.png').convert('RGBA'),
+        }
+        self.elder_backgrounds = {
+            ('1', '1'): Image.open(f'{_dir}//elder_bg_1x1.png').convert('RGBA'),
+            ('1', '3'): Image.open(f'{_dir}//elder_bg_1x3.png').convert('RGBA'),
+            ('1', '4'): Image.open(f'{_dir}//elder_bg_1x4.png').convert('RGBA'),
+            ('2', '1'): Image.open(f'{_dir}//elder_bg_2x1.png').convert('RGBA'),
+            ('2', '2'): Image.open(f'{_dir}//elder_bg_2x2.png').convert('RGBA'),
+            ('2', '3'): Image.open(f'{_dir}//elder_bg_2x3.png').convert('RGBA'),
+            ('2', '4'): Image.open(f'{_dir}//elder_bg_2x4.png').convert('RGBA'),
+        }
 
         # A namedtuple to handle properties.
         # This works fairly well except for Separators which is kinda hacky
@@ -523,11 +542,19 @@ class ItemRender:
         if not isinstance(poe_item, PassiveSkill):
             try:
                 if poe_item.shaper:
-                    self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
-                    self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
+                    if poe_item.rarity.lower() in ['rare', 'unique', 'relic']:
+                        self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
+                        self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
+                    else:
+                        self.namebar_left.alpha_composite(self.shaper_badge, (4, 6))
+                        self.namebar_right.alpha_composite(self.shaper_badge, (1, 6))
                 if poe_item.elder:
-                    self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
-                    self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
+                    if poe_item.rarity.lower() in ['rare', 'unique', 'relic']:
+                        self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
+                        self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
+                    else:
+                        self.namebar_left.alpha_composite(self.elder_badge, (4, 6))
+                        self.namebar_right.alpha_composite(self.elder_badge, (1, 6))
             except AttributeError:
                 pass
             item.paste(self.namebar_left, cur.pos)
@@ -632,7 +659,16 @@ class ItemRender:
                 cur.move_y(4)
                 #stat.text.show()
                 #item.show()
-                item.alpha_composite(stat.text, cur.pos)
+                ic = stat.text
+                if not isinstance(poe_item, PassiveSkill) and poe_item.shaper:
+                    ic = Image.alpha_composite(self.shaper_backgrounds[poe_item.size].resize(ic.size), ic)
+                    print("shaper bg")
+
+                if not isinstance(poe_item, PassiveSkill) and poe_item.elder:
+                    ic = Image.alpha_composite(self.elder_backgrounds[poe_item.size].resize(ic.size), ic)
+                    print("elder bg")
+
+                item.alpha_composite(ic, cur.pos)
                 cur.move_y(stat.text.size[1])
                 cur.reset()
             elif stat.title == "Image" and isinstance(poe_item, PassiveSkill):
@@ -784,7 +820,7 @@ def parse_pob_item(itemtext):
         name = item[pobitem['rarity_index']+1]
         if "Superior" in name:
             name = name.replace("Superior", "").strip()
-        base = name.split('>>')[-1]
+        base = get_base_from_magic(name)
     else:
         name = item[pobitem['rarity_index'] + 1]
         if "Superior" in name:
