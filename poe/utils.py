@@ -18,7 +18,7 @@ from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
 
-from poe.models import Weapon, Armour, PassiveSkill
+from poe.models import Weapon, Armour, PassiveSkill, Gem
 from poe.exceptions import OutdatedPoBException
 from poe.exceptions import AbsentItemBaseException
 
@@ -660,11 +660,11 @@ class ItemRender:
                 #stat.text.show()
                 #item.show()
                 ic = stat.text
-                if not isinstance(poe_item, PassiveSkill) and poe_item.shaper:
+                if not isinstance(poe_item, Gem) and poe_item.shaper:
                     ic = Image.alpha_composite(self.shaper_backgrounds[poe_item.size].resize(ic.size), ic)
                     print("shaper bg")
 
-                if not isinstance(poe_item, PassiveSkill) and poe_item.elder:
+                if not isinstance(poe_item, Gem) and poe_item.elder:
                     ic = Image.alpha_composite(self.elder_backgrounds[poe_item.size].resize(ic.size), ic)
                     print("elder bg")
 
