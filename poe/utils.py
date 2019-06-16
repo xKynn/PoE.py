@@ -394,8 +394,8 @@ class ItemRender:
                     for explicit in explicits:
                         if explicit.lower() == "corrupted":
                             stats.append(self.prop(explicit, '', CORRUPTED))
-                        elif explicit.startswith('{'):
-                            stats.append(self.prop(explicit.replace('{crafted}',''), '', CRAFTED))
+                        elif "(crafted)" in explicit or "{crafted}" in explicit:
+                            stats.append(self.prop(explicit.replace('{crafted}','').replace(' (crafted)', ''), '', CRAFTED))
                         else:
                             stats.append(self.prop(explicit, '', PROP_COLOR))
 
@@ -876,6 +876,7 @@ def modify_base_stats(item):
              'cc': 0, 'range': 0,
              'block': 0
              }
+    print(item.implicits, item.explicits)
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
             text = stat.lower().replace('{crafted}', '').replace('{fractured}', '')
@@ -1052,11 +1053,11 @@ def modify_base_stats(item):
             item.chaos_max = str(round(chaos_mx))
         if stats['phys max'] or stats['phys inc']:
             #print(item.name, item.physical_min)
-            if stats['phys max']:
-                item.physical_min = stats['phys low']
-                item.physical_max = stats['phys max']
-            physical_m = int(ensure_rangeless(item.physical_min))
-            physical_mx = int(ensure_rangeless(item.physical_max))
+            # if stats['phys max']:
+            #     item.physical_min = stats['phys low']
+            #     item.physical_max = stats['phys max']
+            physical_m = int(ensure_rangeless(item.physical_min)) + stats['phys low']
+            physical_mx = int(ensure_rangeless(item.physical_max)) + stats['phys max']
             physical_m += physical_m*(stats['phys inc']/100)
             physical_mx += physical_mx*(stats['phys inc']/100)
             item.physical_min = str(round(physical_m))
@@ -1083,6 +1084,7 @@ def modify_base_stats(item):
             block = int(ensure_rangeless(item.block))
             block += stats['block']
             item.block = str(round(block))
+    print(stats)
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue=None):
     try:
         assert item['rarity'].lower()
