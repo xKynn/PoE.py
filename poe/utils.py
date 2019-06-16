@@ -833,8 +833,9 @@ def parse_pob_item(itemtext):
         for ind, stat in enumerate(item[pobitem['statstart_index']-1:]):
             #print(stat)
             if stat.startswith('--'):
+                print("it ", item[pobitem['statstart_index']-1:][ind+1])
                 if item[pobitem['statstart_index']-1:][ind+1] not in ['Shaper Item', 'Elder Item']:
-                    imp_end = ind
+                    imp_end = ind-1
                     break
         if imp_end != "None":
             #print(item[pobitem['statstart_index']-2:])
@@ -845,18 +846,20 @@ def parse_pob_item(itemtext):
     else:
         implicits = []
     stat_text = item[pobitem['statstart_index']+1:]
+    print(stat_text)
     if item[-1].strip() == "Shaper Item":
         pobitem['special'] = "shaper"
-        stat_text.pop()
+        stat_text = stat_text[:-2]
     elif item[-1].strip() == "Elder Item":
         pobitem['special'] = "elder"
-        stat_text.pop()
+        stat_text = stat_text[:-2]
     if '(' in base and ')' in base:
         base = base[:base.find('(')-1]
     if "Synthesised" in base:
         base = base.replace("Synthesised", "").strip()
     if "Synthesised" in name:
         name = name.replace("Synthesised", "").strip()
+    print(stat_text)
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
             'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special']}
 
@@ -1204,7 +1207,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
         if item['implicits']:
             wiki_base.implicits = '<br>'.join(item['implicits'])
         if item['stats']:
-            wiki_base.explicits = '&lt;br&gt;'.join(item['stats'][:-1])
+            wiki_base.explicits = '&lt;br&gt;'.join(item['stats'])
         # if 1!= 1:
         #     if wiki_base.implicits:
         #         pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
