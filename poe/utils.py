@@ -17,6 +17,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
+from bs4 import BeautifulSoup as Soup
 
 from poe.models import Weapon, Armour, PassiveSkill, Gem
 from poe.exceptions import OutdatedPoBException
@@ -75,17 +76,21 @@ with open(f"{_dir}/keystones.json") as f:
 with open(f"{_dir}/ascendancy.json") as f:
     asc_nodes = js.load(f)
 
+
 def unescape_to_list(props, ret_matches=False):
     matches = reg.findall(props)
+    has_table = Soup(html.unescape(props)).select_one('table.mw-collapsed tr')
+    if not has_table:
+        for match in set(matches):
+            if '|' in match:
+                props = props.replace(match, match.split('|')[1].strip(']]'))
+            else:
+                props = props.replace(match, match.strip('[[]]'))
+        prop_list = html.unescape(props).replace('<br />', '<br>').split('<br>')
+        prop_list = [x.replace('<em class="tc -corrupted">', '').replace('</em>', '') for x in prop_list]
+    else:
+        prop_list = [x.text for x in has_table]
 
-    for match in set(matches):
-        if '|' in match:
-            props = props.replace(match, match.split('|')[1].strip(']]'))
-        else:
-            props = props.replace(match, match.strip('[[]]'))
-
-    prop_list = html.unescape(props).replace('<br />', '<br>').split('<br>')
-    prop_list = [x.replace('<em class="tc -corrupted">', '').replace('</em>', '') for x in prop_list]
     if ret_matches:
         return prop_list, matches
     return prop_list
