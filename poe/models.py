@@ -186,15 +186,16 @@ class Mod:
 
 
 class PassiveSkill:
-    def __init__(self, asc_class, flavor_text, icon, is_keystone, is_notable, name, reminder_text, stat_text):
+    def __init__(self, asc_class, flavor_text, icon, is_keystone, is_notable, name, reminder_text, stat_text, int_id):
         self.asc_class = asc_class if asc_class else None
         self.flavor_text = flavor_text if flavor_text else None
         self.icon = icon if icon else None
         self.is_keystone = is_keystone
-        self.is_notable= is_notable
+        self.is_notable = is_notable
         self.name = name
         self.reminder_text = reminder_text if reminder_text else None
         self.stat_text = stat_text if stat_text else None
+        self.int_id = int_id if int_id else None
         self.tags = []
 
 

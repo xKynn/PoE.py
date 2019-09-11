@@ -114,8 +114,9 @@ class ClientBase:
             name = passive.get("name", None)
             reminder_text = passive.get("reminder text", None)
             stat_text = passive.get("stat text", None)
+            int_id = passive.get("int id", None)
             final_list.append(PassiveSkill(asc_class, flavor_text, icon, is_keystone, is_notable,
-                                           name, reminder_text, stat_text))
+                                           name, reminder_text, stat_text, int_id))
         return final_list
     @staticmethod
     def get_image_url(filename, req):

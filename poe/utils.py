@@ -17,6 +17,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
+from poe import Client
 from bs4 import BeautifulSoup as Soup
 
 from poe.models import Weapon, Armour, PassiveSkill, Gem
@@ -31,8 +32,28 @@ re_range = re.compile('\(.+?\)')
 # Simple cursor class that lets me handle moving around the image quite well
 # also get around the hassle of maintaining position and adding and subtracting.
 
+
+def update_keystones():
+    cl = Client()
+    ks = cl.find_passives({'is_keystone': "1"})
+    ks_json = {node.int_id: node.name for node in ks}
+
+    with open(f"{_dir}/keystones.json", 'w') as file:
+        js.dump(ks_json, file)
+
+
+def update_ascendancy():
+    cl = Client()
+    asc = cl.find_passives({'ascendancy_class': "%"}, limit=500)
+    asc_json = {node.int_id: node.name for node in asc}
+
+    with open(f"{_dir}/ascendancy.json", 'w') as file:
+        js.dump(asc_json, file)
+
+
 def strip_unicode(text: str):
     return ''.join((c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn'))
+
 
 class Cursor:
 
@@ -94,6 +115,7 @@ def unescape_to_list(props, ret_matches=False):
     if ret_matches:
         return prop_list, matches
     return prop_list
+
 
 class ItemRender:
     def __init__(self, flavor):

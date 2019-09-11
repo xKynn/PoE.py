@@ -21,7 +21,7 @@
           "skill_levels.damage_multiplier", "skill_levels.dexterity_requirement", "skill_levels.experience", "skill_levels.intelligence_requirement",
           "skill_levels.level", "skill_levels.level_requirement", "skill_levels.mana_cost", "skill_levels.mana_multiplier", "skill_levels.quality_stat_text",
           "skill_levels.stat_text", "skill_levels.stored_uses", "skill_levels.strength_requirement", "skill_levels.vaal_souls_requirement", "skill_levels.vaal_stored_uses"],
-  "passives": ["ascendancy_class", "flavour_text", "icon", "is_keystone", "is_notable", "name", "reminder_text", "stat_text"],
+  "passives": ["ascendancy_class", "flavour_text", "icon", "is_keystone", "is_notable", "name", "reminder_text", "stat_text", "int_id"],
   "elder": ["Nebuloch", "Shimmeron", "Hopeshredder", "Blasphemer's Grasp", "Cyclopean Coil", "Impresence", "Disintegrator",
           "Voidfletcher", "Mark of the Elder", "Voidforge"],
   "shaper": ["Indigon", "Mark of the Shaper", "Shaper's Touch", "Solstice Vigil", "Starforge", "The Eternity Shroud",
