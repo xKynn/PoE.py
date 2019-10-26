@@ -72,15 +72,17 @@ _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 # Gamepedia API will return links decorated with [[]]
 # at times with singular and plurals as well, re here handles that
 reg = re.compile(r'\[\[[^\]]+\]\]')
+try:
+    with open(f"{_dir}/keystones.json") as f:
+        keystones = js.load(f)
 
-with open(f"{_dir}/keystones.json") as f:
-    keystones = js.load(f)
+    with open(f"{_dir}/ascendancy.json") as f:
+        asc_nodes = js.load(f)
 
-with open(f"{_dir}/ascendancy.json") as f:
-    asc_nodes = js.load(f)
-
-with open(f"{_dir}/items.json") as f:
-    items = js.load(f)
+    with open(f"{_dir}/items.json") as f:
+        items = js.load(f)
+except:
+    pass
 
 
 def unescape_to_list(props, ret_matches=False):
