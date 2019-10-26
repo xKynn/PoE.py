@@ -20,3 +20,8 @@ def update_ascendancy():
 
     with open(f"{_dir}/ascendancy.json", 'w+') as file:
         js.dump(asc_json, file)
+
+if __name__ == "__main__":
+    update_keystones()
+    update_ascendancy()
+    print("Done!")
