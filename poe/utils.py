@@ -21,7 +21,7 @@ from PIL import ImageOps
 from bs4 import BeautifulSoup as Soup
 
 from poe.models import Weapon, Armour, PassiveSkill, Gem
-from poe.exceptions import OutdatedPoBException
+from poe.exceptions import OutdatedPoBException, RequestException
 from poe.exceptions import AbsentItemBaseException
 
 
@@ -1639,3 +1639,64 @@ def poe_skill_tree(hashes, asc: str = "None",
         return f"https://www.pathofexile.com/fullscreen-passive-skill-tree/{post}", ascendancy
 
     return f"https://www.pathofexile.com/fullscreen-passive-skill-tree/{post}"
+
+def get_active_leagues():
+    http = urllib3.PoolManager()
+    resp = http.request('GET', 'https://www.pathofexile.com/api/trade/data/leagues')
+    if resp.status != 200:
+        raise RequestException(resp.data.decode('utf-8'))
+
+    leagues = js.loads(resp.data.decode('utf-8'))
+
+    return leagues['result']
+
+def price_check(item, league):
+    http = urllib3.PoolManager()
+    data = {
+        "query": {
+            "name": item
+        },
+        "sort": {
+            "price": "asc"
+        }
+    }
+    resp = http.request('POST', f'https://www.pathofexile.com/api/trade/search/{league}',
+                        fields=data)
+    if resp.status != 200:
+        raise RequestException(resp.data.decode('utf-8'))
+
+    json_result = js.loads(resp.data.decode('utf-8'))
+    item_ids = json_result['result']
+    search_id = json_result['id']
+
+    entries = http.request('GET', f'https://www.pathofexile.com/api/trade/fetch/{",".join(item_ids)}',
+                        fields={'query': search_id})
+    if entries.status != 200:
+        raise RequestException(entries.data.decode('utf-8'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
