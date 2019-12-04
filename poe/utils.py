@@ -1650,8 +1650,38 @@ def get_active_leagues():
 
     return leagues['result']
 
-def price_check(item, league):
+def _trade_api_query(data, league, endpoint):
     http = urllib3.PoolManager()
+    resp = http.request('POST', f'https://www.pathofexile.com/api/trade/{endpoint}/{league}',
+                        fields=data)
+    if resp.status != 200:
+        raise RequestException(resp.data.decode('utf-8'))
+
+    json_result = js.loads(resp.data.decode('utf-8'))
+    listing_ids = json_result['result']
+    search_id = json_result['id']
+
+    entries = http.request('GET', f'https://www.pathofexile.com/api/trade/fetch/{",".join(listing_ids)}',
+                        fields={'query': search_id})
+    if entries.status != 200:
+        raise RequestException(entries.data.decode('utf-8'))    
+    
+    return entries.data.decode('utf-8').json()['result']
+def currency_rates(have: str, want: str, league: str):
+    http = urllib3.PoolManager()
+    data = {
+        "exchange":{
+            "status": {
+                "option": "online"
+            },
+            "have": [have],
+            "want": [want]
+        }
+    }
+    listings = self._trade_api_query(data, league, 'exchange')
+    return CurrencyQuery(have, want, league, listings)
+    
+def item_price(item, league):
     data = {
         "query": {
             "name": item
@@ -1660,19 +1690,8 @@ def price_check(item, league):
             "price": "asc"
         }
     }
-    resp = http.request('POST', f'https://www.pathofexile.com/api/trade/search/{league}',
-                        fields=data)
-    if resp.status != 200:
-        raise RequestException(resp.data.decode('utf-8'))
+    listings = self._trade_api_query(data, league, 'search')
 
-    json_result = js.loads(resp.data.decode('utf-8'))
-    item_ids = json_result['result']
-    search_id = json_result['id']
-
-    entries = http.request('GET', f'https://www.pathofexile.com/api/trade/fetch/{",".join(item_ids)}',
-                        fields={'query': search_id})
-    if entries.status != 200:
-        raise RequestException(entries.data.decode('utf-8'))
 
 
 
