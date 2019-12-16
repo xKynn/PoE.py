@@ -13,11 +13,11 @@ from io import BytesIO
 
 import urllib3
 from collections import defaultdict
-from nltk import bigrams
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageOps
+from poe.price import ItemPriceQuery, CurrencyQuery
 from bs4 import BeautifulSoup as Soup
 
 from poe.models import Weapon, Armour, PassiveSkill, Gem
@@ -1407,7 +1407,7 @@ def parse_pob_xml(xml: str, cl=None):
     return stats
 
 
-def parse_poe_char_api(json, cl):
+def parse_poe_char_api(json, cl, items_only=False):
     rarity = {0: "Normal",
               1: "Magic",
               2: "Rare",
@@ -1418,6 +1418,9 @@ def parse_poe_char_api(json, cl):
     obj_dict = {}
     for item in json['items']:
         char_item = defaultdict(int)
+        if items_only and 'Prophecy' in item['icon'] or 'Divination' in item['icon']:
+            equipped['Item'] = item
+            continue
         char_item['rarity'] = rarity[item['frameType']]
         char_item['name'] = item["name"].split('>>')[-1]
         if 'properties' in item:
@@ -1464,7 +1467,9 @@ def parse_poe_char_api(json, cl):
             char_item['base'] = get_base_from_magic(item['typeLine'])
         else:
             char_item['base'] = item["typeLine"]
-        if 'Ring' in item['inventoryId']:
+        if items_only:
+            slot = "Item"
+        elif 'Ring' in item['inventoryId']:
             slot = "Ring 2" if "2" in item['inventoryId'] else "Ring 1"
         elif item['inventoryId'] == "Offhand":
             slot = "Weapon 2"
@@ -1501,13 +1506,13 @@ def parse_poe_char_api(json, cl):
             char_item['implicits'] = ["{crafted}"+item['enchantMods'][0]]
         equipped[slot] = {}
         ###print(item.keys())
-        if slot == 'PassiveJewels':
+        if slot == 'PassiveJewels' or items_only:
             if type(equipped[slot]) is dict:
                 equipped[slot] = []
             equipped[slot].append(char_item)
         else:
             equipped[slot] = char_item
-        if 'socketedItems' in item:
+        if 'socketedItems' in item and not items_only:
             equipped[slot]['gems'] = []
             for socketed in item['socketedItems']:
                 if socketed['frameType'] == 4:
@@ -1528,8 +1533,13 @@ def parse_poe_char_api(json, cl):
     for thread in threads:
         thread.join()
     #print(obj_dict)
+    if items_only:
+        equipped["items_objects"] = []
     for slot in obj_dict:
-        equipped[slot]['object'] = obj_dict[slot]
+        if not items_only:
+            equipped[slot]['object'] = obj_dict[slot]
+        else:
+            equipped["items_objects"] = obj_dict[slot]
     #print(equipped['Body Armour'])
     stats = {'equipped': equipped}
     if 'character' in json:
@@ -1652,8 +1662,10 @@ def get_active_leagues():
 
 def _trade_api_query(data, league, endpoint):
     http = urllib3.PoolManager()
+    print(js.dumps(data).encode('utf-8'))
     resp = http.request('POST', f'https://www.pathofexile.com/api/trade/{endpoint}/{league}',
-                        fields=data)
+                        body=js.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
+
     if resp.status != 200:
         raise RequestException(resp.data.decode('utf-8'))
 
@@ -1661,14 +1673,12 @@ def _trade_api_query(data, league, endpoint):
     listing_ids = json_result['result']
     search_id = json_result['id']
 
-    entries = http.request('GET', f'https://www.pathofexile.com/api/trade/fetch/{",".join(listing_ids)}',
-                        fields={'query': search_id})
+    entries = http.request('GET', f'https://www.pathofexile.com/api/trade/fetch/{",".join(listing_ids[:10])}')
     if entries.status != 200:
-        raise RequestException(entries.data.decode('utf-8'))    
-    
-    return entries.data.decode('utf-8').json()['result']
+        raise RequestException(entries.data.decode('utf-8'))
+
+    return js.loads(entries.data.decode('utf-8'))['result']
 def currency_rates(have: str, want: str, league: str):
-    http = urllib3.PoolManager()
     data = {
         "exchange":{
             "status": {
@@ -1678,19 +1688,20 @@ def currency_rates(have: str, want: str, league: str):
             "want": [want]
         }
     }
-    listings = self._trade_api_query(data, league, 'exchange')
+    listings = _trade_api_query(data, league, 'exchange')
     return CurrencyQuery(have, want, league, listings)
-    
+
 def item_price(item, league):
     data = {
         "query": {
-            "name": item
+            "term": item
         },
         "sort": {
             "price": "asc"
         }
     }
-    listings = self._trade_api_query(data, league, 'search')
+    listings = _trade_api_query(data, league, 'search')
+    return ItemPriceQuery(item, league, listings)
 
 
 
