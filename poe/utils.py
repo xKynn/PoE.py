@@ -826,7 +826,7 @@ def parse_pob_item(itemtext):
             pobitem['statstart_index'] = index
         elif line.startswith("Quality"):
             ###print(line)
-            qualtext = line.split("Quality:")[1].strip().split(" ")[0].strip("%").strip("+")
+            qualtext = line.split("+")[1].split(' ')[0].strip('%')
     if pobitem['rarity'].lower() in ['unique', 'rare', 'relic']:
         name = item[pobitem['rarity_index']+1]
         base = item[pobitem['rarity_index']+2]
