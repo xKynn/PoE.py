@@ -30,7 +30,7 @@ class Requirements:
 class Item:
     def __init__(self, base, item_class, name, rarity, size, drop, requirements,
                  lore, help_text, is_corrupted, is_relic, alt_art, quality, implicits,
-                 explicits, tags, icon, shaper, elder, *args):
+                 explicits, tags, icon, influences, *args):
         self.base = base
         self.item_class = item_class
         self.name = name
@@ -48,8 +48,7 @@ class Item:
         self.explicits = explicits
         self.tags = tags
         self.icon = icon
-        self.shaper = shaper
-        self.elder = elder
+        self.influences = influences
 
     def __repr__(self):
         return f"<Item: name={self.name} rarity={self.rarity}>"

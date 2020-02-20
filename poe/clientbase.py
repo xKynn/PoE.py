@@ -180,13 +180,14 @@ class ClientBase:
     def item_list_gen(self, data, req=None, url=None, where=None):
         result_list = self.extract_cargoquery(data)
         final_list = []
+        influences = []
         for item in result_list:
             shaper = False
             elder = False
             if item['name'] in self.shaper_items:
-                shaper = True
+                influences.append("shaper")
             if item['name'] in self.elder_items:
-                elder = True
+                influences.append("elder")
             if 'weapon' in item['tags'].split(','):
                 params = {
                     'tables': 'weapons',
@@ -273,7 +274,7 @@ class ClientBase:
                                  item['flavour text'], item['help text'], self.bool_(item['is corrupted']),
                                  self.bool_(item['is relic']), item['alternate art inventory icons'],
                                  item['quality'], item['implicit stat text'], item['explicit stat text'],
-                                 item['tags'], image_url,shaper, elder, stats)
+                                 item['tags'], image_url, influences, stats)
 
             final_list.append(current_item)
         return final_list

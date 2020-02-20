@@ -117,6 +117,10 @@ class ItemRender:
         self.div_frame = Image.open(f'{_dir}//div_frame.png').convert('RGBA')
         self.elder_badge = Image.open(f'{_dir}//elder_badge.png').convert('RGBA')
         self.shaper_badge = Image.open(f'{_dir}//shaper_badge.png').convert('RGBA')
+        self.redeemer_badge = Image.open(f'{_dir}//redeemer_badge.png').convert('RGBA')
+        self.crusader_badge = Image.open(f'{_dir}//crusader_badge.png').convert('RGBA')
+        self.hunter_badge = Image.open(f'{_dir}//hunter_badge.png').convert('RGBA')
+        self.warlord_badge = Image.open(f'{_dir}//warlord_badge.png').convert('RGBA')
         self.passive_frame = Image.open(f'{_dir}//passive_frame.png').convert('RGBA')
         self.keystone_frame = Image.open(f'{_dir}//keystone_frame.png').convert('RGBA')
         self.notable_frame = Image.open(f'{_dir}//notable_frame.png').convert('RGBA')
@@ -559,20 +563,30 @@ class ItemRender:
         cur = Cursor(center_x)
         if not isinstance(poe_item, PassiveSkill):
             try:
-                if poe_item.shaper:
+                if poe_item.influences:
+                    apply_influences = []
+                    for influence in poe_item.influences:
+                        if influence == "shaper":
+                            apply_influences.append(self.shaper_badge)
+                        elif influence == "elder":
+                            apply_influences.append(self.elder_badge)
+                        elif influence == "redeemer":
+                            apply_influences.append(self.redeemer_badge)
+                        elif influence == "crusader":
+                            apply_influences.append(self.crusader_badge)
+                        elif influence == "hunter":
+                            apply_influences.append(self.hunter_badge)
+                        elif influence == "warlord":
+                            apply_influences.append(self.warlord_badge)
+
                     if poe_item.rarity.lower() in ['rare', 'unique', 'relic']:
-                        self.namebar_left.alpha_composite(self.shaper_badge, (8, 18))
-                        self.namebar_right.alpha_composite(self.shaper_badge, (9, 18))
+                        self.namebar_left.alpha_composite(apply_influences[0], (8, 18))
+                        if len(apply_influences) > 1:
+                            self.namebar_right.alpha_composite(apply_influences[1], (9, 18))
                     else:
-                        self.namebar_left.alpha_composite(self.shaper_badge, (4, 6))
-                        self.namebar_right.alpha_composite(self.shaper_badge, (1, 6))
-                if poe_item.elder:
-                    if poe_item.rarity.lower() in ['rare', 'unique', 'relic']:
-                        self.namebar_left.alpha_composite(self.elder_badge, (8, 18))
-                        self.namebar_right.alpha_composite(self.elder_badge, (9, 18))
-                    else:
-                        self.namebar_left.alpha_composite(self.elder_badge, (4, 6))
-                        self.namebar_right.alpha_composite(self.elder_badge, (1, 6))
+                        self.namebar_left.alpha_composite(apply_influences[0], (4, 6))
+                        if len(apply_influences) > 1:
+                            self.namebar_right.alpha_composite(apply_influences[0], (1, 6))
             except AttributeError:
                 pass
             item.paste(self.namebar_left, cur.pos)
@@ -678,11 +692,11 @@ class ItemRender:
                 #stat.text.show()
                 #item.show()
                 ic = stat.text
-                if not isinstance(poe_item, Gem) and poe_item.shaper:
+                if not isinstance(poe_item, Gem) and 'shaper' in poe_item.influences:
                     ic = Image.alpha_composite(self.shaper_backgrounds[poe_item.size].resize(ic.size), ic)
                     #print("shaper bg")
 
-                if not isinstance(poe_item, Gem) and poe_item.elder:
+                if not isinstance(poe_item, Gem) and 'elder' in poe_item.influences:
                     ic = Image.alpha_composite(self.elder_backgrounds[poe_item.size].resize(ic.size), ic)
                     #print("elder bg")
 
@@ -776,7 +790,7 @@ def parse_pob_item(itemtext):
     item = itemtext.split('\n')
     qualtext = 0
     variant = None
-    pobitem = {'special': None}
+    pobitem = {'special': []}
     for index, line in enumerate(item):
         if "{variant:" in line:
             variant_now = line[line.index("t:") + 2:line.index("}")].split(',')
@@ -838,6 +852,18 @@ def parse_pob_item(itemtext):
             qualtext = line.split("+")[1].split(' ')[0].strip('%')
         if line.startswith('--'):
             item[index] = " "
+        if "Shaper Item" in line:
+            pobitem['special'].append("Shaper Item")
+        if "Elder Item" in line:
+            pobitem['special'].append("Elder Item")
+        if "Crusader Item" in line:
+            pobitem['special'].append("Crusader Item")
+        if "Redeemer Item" in line:
+            pobitem['special'].append("Redeemer Item")
+        if "Warlord Item" in line:
+            pobitem['special'].append("Warlord Item")
+        if "Hunter Item" in line:
+            pobitem['special'].append("Hunter Item")
 
     if pobitem['rarity'].lower() in ['unique', 'rare', 'relic']:
         name = item[pobitem['rarity_index']+1]
@@ -874,12 +900,9 @@ def parse_pob_item(itemtext):
         implicits = []
     stat_text = item[pobitem['statstart_index']+1:]
     #print(stat_text)
-    if item[-1].strip() == "Shaper Item":
-        pobitem['special'] = "shaper"
-        stat_text = stat_text[:-2]
-    elif item[-1].strip() == "Elder Item":
-        pobitem['special'] = "elder"
-        stat_text = stat_text[:-2]
+    # if pobitem['special']:
+    #     for influence in pobitem['special']:
+    #         stat_text += influence
     if '(' in base and ')' in base:
         base = base[:base.find('(')-1]
     if "Synthesised" in base:
@@ -1265,10 +1288,20 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
             ##print("mod", wiki_base.name)
             modify_base_stats(wiki_base)
     if item['special']:
-        if item['special'] == "shaper":
-            wiki_base.shaper = True
-        elif item['special'] == "elder":
-            wiki_base.elder = True
+        for influence in item['special']:
+            if influence == "Shaper Item":
+                wiki_base.influences.append("shaper")
+            elif influence == "Elder Item":
+                wiki_base.influences.append("elder")
+            elif influence == "Redeemer Item":
+                wiki_base.influences.append("redeemer")
+            elif influence == "Crusader Item":
+                wiki_base.influences.append("crusader")
+            elif influence == "Warlord Item":
+                wiki_base.influences.append("warlord")
+            elif influence == "Hunter Item":
+                wiki_base.influences.append("hunter")
+
     object_dict[slot] = wiki_base
 
 
