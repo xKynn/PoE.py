@@ -272,6 +272,10 @@ class ItemRender:
                     stats.append(self.prop("Energy Shield: ", item.energy_shield, PROP_COLOR))
                 stats.append(separator)
 
+            elif 'ring' in item.tags or 'amulet' in item.tags or 'belt' in item.tags:
+                if item.quality:
+                    stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
+
             elif 'gem' in item.tags:
                 stats.append(self.prop(item.gem_tags.replace(',', ', '), '', DESC_COLOR))
                 if item.stats_per_level[0]['mana multiplier']:
@@ -822,11 +826,19 @@ def parse_pob_item(itemtext):
         elif line.startswith("Implicits:"):
             pobitem['implicits'] = int(line.split(': ')[1])
             pobitem['statstart_index'] = index+pobitem['implicits']
+        elif "(implicit)" in line:
+            if 'implicits' in pobitem:
+                pobitem['implicits'] = pobitem['implicits'] + 1
+            else:
+                pobitem['implicits'] = 1
         elif line.startswith("Requires"):
             pobitem['statstart_index'] = index
         elif line.startswith("Quality"):
             ###print(line)
             qualtext = line.split("+")[1].split(' ')[0].strip('%')
+        if line.startswith('--'):
+            item[index] = " "
+
     if pobitem['rarity'].lower() in ['unique', 'rare', 'relic']:
         name = item[pobitem['rarity_index']+1]
         base = item[pobitem['rarity_index']+2]
@@ -842,7 +854,7 @@ def parse_pob_item(itemtext):
             name = name.replace("Superior", "").strip()
         base = name
     if 'implicits' in pobitem:
-        implicits = item[pobitem['statstart_index'] - (pobitem['implicits']-1):][:pobitem['implicits']]
+        implicits = item[pobitem['statstart_index'] - (pobitem['implicits']):][:pobitem['implicits']]
     elif item[pobitem['statstart_index']-2].startswith('--') and 'Item Level' not in item[pobitem['statstart_index']-1]:
         imp_end = "None"
         for ind, stat in enumerate(item[pobitem['statstart_index']-1:]):
@@ -874,6 +886,7 @@ def parse_pob_item(itemtext):
         base = base.replace("Synthesised", "").strip()
     if "Synthesised" in name:
         name = name.replace("Synthesised", "").strip()
+
     #print(stat_text)
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
             'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special']}
