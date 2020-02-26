@@ -848,8 +848,11 @@ def parse_pob_item(itemtext):
         elif line.startswith("Requires"):
             pobitem['statstart_index'] = index
         elif line.startswith("Quality"):
-            ###print(line)
-            qualtext = line.split("+")[1].split(' ')[0].strip('%')
+            #print(line)
+            try:
+                qualtext = line.split("+")[1].split(' ')[0].strip('%')
+            except IndexError:
+                pass
         if line.startswith('--'):
             item[index] = " "
         if "Shaper Item" in line:
