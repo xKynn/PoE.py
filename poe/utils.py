@@ -279,6 +279,7 @@ class ItemRender:
             elif 'ring' in item.tags or 'amulet' in item.tags or 'belt' in item.tags:
                 if item.quality:
                     stats.append(self.prop("Quality: ", f"+{item.quality}%", PROP_COLOR))
+                    stats.append(separator)
 
             elif 'gem' in item.tags:
                 stats.append(self.prop(item.gem_tags.replace(',', ', '), '', DESC_COLOR))
@@ -357,6 +358,10 @@ class ItemRender:
                 stats.append(self.prop("Requires", reqs, None))
                 stats.append(separator)
 
+            if item.enchant:
+                stats.append(self.prop(item.enchant, '', CRAFTED))
+                stats.append(separator)
+
             if 'gem' in item.tags:
                 if len(item.description.split(' ')) > 7:
                     desc = item.description.split(' ')
@@ -405,15 +410,14 @@ class ItemRender:
                     explicits.pop(0)
                 if implicits:
                     for implicit in implicits:
-                        if implicit.startswith('{'):
-                            stats.append(self.prop(implicit.replace('{crafted}',''), '', CRAFTED))
-                        else:
                             stats.append(self.prop(implicit, '', PROP_COLOR))
 
                     stats.append(separator)
 
                 if explicits:
                     for explicit in explicits:
+                        if explicit in item.lore:
+                            continue
                         if explicit.lower() == "corrupted":
                             stats.append(self.prop(explicit, '', CORRUPTED))
                         elif "(crafted)" in explicit or "{crafted}" in explicit:
@@ -790,7 +794,7 @@ def parse_pob_item(itemtext):
     item = itemtext.split('\n')
     qualtext = 0
     variant = None
-    pobitem = {'special': []}
+    pobitem = {'special': [], 'enchant': ""}
     for index, line in enumerate(item):
         if "{variant:" in line:
             variant_now = line[line.index("t:") + 2:line.index("}")].split(',')
@@ -832,19 +836,33 @@ def parse_pob_item(itemtext):
             continue
         elif line.startswith("Item Level"):
             if item[index+3].startswith('--'):
-                pobitem['statstart_index'] = index + 3
+                offset = 2
+                if "(implicit)" not in item[index + offset]:
+                    pobitem['enchant'] = item[index+offset]
+                    offset = 4
+                if "(implicit)" in item[index+offset]:
+                    pobitem['implicits'] = 0
+                    for line_inner in item[index+offset:]:
+                        print(line_inner)
+                        if "(implicit)" in line_inner:
+                            pobitem['implicits'] = pobitem['implicits'] + 1
+                        if "---" in line_inner:
+                            break
+                    pobitem['statstart_index'] = index + offset + pobitem['implicits']
+                else:
+                    pobitem['statstart_index'] = index + offset
             else:
-                pobitem['statstart_index'] = index + 1
+                pobitem['statstart_index'] = index + 2
         elif line.startswith("====="):
             pobitem['statstart_index'] = index
-        elif line.startswith("Implicits:"):
-            pobitem['implicits'] = int(line.split(': ')[1])
-            pobitem['statstart_index'] = index+pobitem['implicits']
-        elif "(implicit)" in line:
-            if 'implicits' in pobitem:
-                pobitem['implicits'] = pobitem['implicits'] + 1
-            else:
-                pobitem['implicits'] = 1
+        # elif line.startswith("Implicits:"):
+        #     pobitem['implicits'] = int(line.split(': ')[1])
+        #     pobitem['statstart_index'] = index+pobitem['implicits']
+        # elif "(implicit)" in line:
+        #     if 'implicits' in pobitem:
+        #         pobitem['implicits'] = pobitem['implicits'] + 1
+        #     else:
+        #         pobitem['implicits'] = 1
         elif line.startswith("Requires"):
             pobitem['statstart_index'] = index
         elif line.startswith("Quality"):
@@ -853,8 +871,6 @@ def parse_pob_item(itemtext):
                 qualtext = line.split("+")[1].split(' ')[0].strip('%')
             except IndexError:
                 pass
-        if line.startswith('--'):
-            item[index] = " "
         if "Shaper Item" in line:
             pobitem['special'].append("Shaper Item")
         if "Elder Item" in line:
@@ -883,7 +899,9 @@ def parse_pob_item(itemtext):
             name = name.replace("Superior", "").strip()
         base = name
     if 'implicits' in pobitem:
-        implicits = item[pobitem['statstart_index'] - (pobitem['implicits']):][:pobitem['implicits']]
+        implicits = item[:pobitem['statstart_index']][-1*pobitem['implicits']:]
+        implicits = [implicit.replace('(implicit)', '') for implicit in implicits]
+        print(implicits)
     elif item[pobitem['statstart_index']-2].startswith('--') and 'Item Level' not in item[pobitem['statstart_index']-1]:
         imp_end = "None"
         for ind, stat in enumerate(item[pobitem['statstart_index']-1:]):
@@ -902,6 +920,7 @@ def parse_pob_item(itemtext):
     else:
         implicits = []
     stat_text = item[pobitem['statstart_index']+1:]
+    stat_text = [stat for stat in stat_text if not stat.startswith('--')]
     #print(stat_text)
     # if pobitem['special']:
     #     for influence in pobitem['special']:
@@ -915,7 +934,8 @@ def parse_pob_item(itemtext):
 
     #print(stat_text)
     return {'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
-            'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special']}
+            'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special'],
+            'enchant': pobitem['enchant']}
 
 def ensure_rangeless(stat):
     if "-" in str(stat):
@@ -1275,6 +1295,8 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
             wiki_base.implicits = '<br>'.join(item['implicits'])
         if item['stats']:
             wiki_base.explicits = '&lt;br&gt;'.join(item['stats'])
+        if item['enchant']:
+            wiki_base.enchant = item['enchant']
         # if 1!= 1:
         #     if wiki_base.implicits:
         #         pob_implicits = item['stats'][:len(wiki_base.implicits.split('&lt;br&gt;'))]
