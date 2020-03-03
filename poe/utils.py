@@ -794,7 +794,8 @@ def parse_pob_item(itemtext):
     item = itemtext.split('\n')
     qualtext = 0
     variant = None
-    pobitem = {'special': [], 'enchant': ""}
+    pobitem = {'special': [], 'enchant': "", 'type': None}
+    #print(item)
     for index, line in enumerate(item):
         if "{variant:" in line:
             variant_now = line[line.index("t:") + 2:line.index("}")].split(',')
@@ -810,7 +811,6 @@ def parse_pob_item(itemtext):
                 pass
                 ##print(line)
             txt = line.split("}")[1]
-            print(txt)
             matches = re_range.findall(txt)
             for match in matches:
                 stat = match[1:-1]
@@ -835,6 +835,7 @@ def parse_pob_item(itemtext):
             variant = line.split(": ")[1]
             continue
         elif line.startswith("Item Level"):
+            pobitem['type'] = "game"
             if item[index+3].startswith('--'):
                 offset = 2
                 if "(implicit)" not in item[index + offset]:
@@ -855,9 +856,10 @@ def parse_pob_item(itemtext):
                 pobitem['statstart_index'] = index + 2
         elif line.startswith("====="):
             pobitem['statstart_index'] = index
-        # elif line.startswith("Implicits:"):
-        #     pobitem['implicits'] = int(line.split(': ')[1])
-        #     pobitem['statstart_index'] = index+pobitem['implicits']
+        elif line.startswith("Implicits:") and 'implicits' not in pobitem:
+             pobitem['type'] = 'pob'
+             pobitem['implicits'] = int(line.split(': ')[1])
+             pobitem['statstart_index'] = index+pobitem['implicits']
         # elif "(implicit)" in line:
         #     if 'implicits' in pobitem:
         #         pobitem['implicits'] = pobitem['implicits'] + 1
@@ -898,8 +900,12 @@ def parse_pob_item(itemtext):
         if "Superior" in name:
             name = name.replace("Superior", "").strip()
         base = name
-    if 'implicits' in pobitem:
-        implicits = item[:pobitem['statstart_index']][-1*pobitem['implicits']:]
+    if 'implicits' in pobitem and pobitem['implicits']:
+        if pobitem['type'] == 'game':
+            offset = 0
+        else:
+            offset = 1
+        implicits = item[:pobitem['statstart_index']+offset][-1*pobitem['implicits']:]
         implicits = [implicit.replace('(implicit)', '') for implicit in implicits]
         print(implicits)
     elif item[pobitem['statstart_index']-2].startswith('--') and 'Item Level' not in item[pobitem['statstart_index']-1]:
@@ -1361,7 +1367,7 @@ def parse_pob_xml(xml: str, cl=None):
             except:
                 continue
             item = equipped[slot]['parsed']
-            t = threading.Thread(target=_get_wiki_base, args=(item, obj_dict, cl, slot, False, exc_queue))
+            t = threading.Thread(target=_get_wiki_base, args=(item, obj_dict, cl, slot))
             threads.append(t)
             t.start()
         for thread in threads:
