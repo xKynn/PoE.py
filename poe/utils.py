@@ -357,10 +357,12 @@ class ItemRender:
                     reqs['int'] = item.requirements.int
                 stats.append(self.prop("Requires", reqs, None))
                 stats.append(separator)
-
-            if item.enchant:
-                stats.append(self.prop(item.enchant, '', CRAFTED))
-                stats.append(separator)
+            try:
+                if item.enchant:
+                    stats.append(self.prop(item.enchant, '', CRAFTED))
+                    stats.append(separator)
+            except AttributeError:
+                pass
 
             if 'gem' in item.tags:
                 if len(item.description.split(' ')) > 7:
