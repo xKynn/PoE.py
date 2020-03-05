@@ -1773,11 +1773,15 @@ def currency_rates(have: str, want: str, league: str):
 def item_price(item, league):
     data = {
         "query": {
-            "term": item
+            "term": item,
+            "status": {
+                "option": "online"
+            }
         },
         "sort": {
             "price": "asc"
-        }
+        },
+
     }
     listings = _trade_api_query(data, league, 'search')
     return ItemPriceQuery(item, league, listings)
