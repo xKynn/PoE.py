@@ -1443,8 +1443,17 @@ def parse_pob_xml(xml: str, cl=None):
     try:
         stats['class'] = tree.find('Build').attrib.get('className', "None")
         stats['ascendancy'] = tree.find('Build').attrib.get('ascendClassName', "None")
-        stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
+        try:
+            stats['total_dps'] = tree.find('Build/PlayerStat[@stat="CombinedDPS"]').attrib['value']
+        except:
+            stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
         stats['level'] = tree.find('Build').attrib['level']
+        try:
+            main_group = int(tree.find('Build').attrib.get('mainSocketGroup', 1))
+            skill_in_group = int(skill_slots[main_group-1].attrib.get('mainActiveSkill', 1))
+            stats['main_skill'] = skill_slots[main_group-1].getchildren()[skill_in_group-1].attrib['nameSpec']
+        except:
+            stats['main_skill'] = " "
         stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
         stats['effective_crit_chance'] = tree.find('Build/PlayerStat[@stat="CritChance"]').attrib['value']
         stats['chance_to_hit'] = tree.find('Build/PlayerStat[@stat="HitChance"]').attrib['value']
