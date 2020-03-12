@@ -589,9 +589,13 @@ class ItemRender:
                         self.namebar_left.alpha_composite(apply_influences[0], (8, 18))
                         if len(apply_influences) > 1:
                             self.namebar_right.alpha_composite(apply_influences[1], (9, 18))
+                        else:
+                            self.namebar_right.alpha_composite(apply_influences[0], (9, 18))
                     else:
                         self.namebar_left.alpha_composite(apply_influences[0], (4, 6))
                         if len(apply_influences) > 1:
+                            self.namebar_right.alpha_composite(apply_influences[1], (1, 6))
+                        else:
                             self.namebar_right.alpha_composite(apply_influences[0], (1, 6))
             except AttributeError:
                 pass
