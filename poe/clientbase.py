@@ -1,18 +1,19 @@
+import html
 import json
 import os
-import html
 
-from .models import Item
-from .models import Weapon
+from bs4 import BeautifulSoup as Soup
+
 from .models import Armour
-from .models import Prophecy
-from .models import Gem
 from .models import DivCard
+from .models import Gem
+from .models import Item
 from .models import ItemDrop
-from .models import Requirements
 from .models import PassiveSkill
+from .models import Prophecy
+from .models import Requirements
+from .models import Weapon
 from .utils import reg
-from bs4 import BeautifulSoup as BS
 
 
 class ClientBase:
@@ -21,29 +22,19 @@ class ClientBase:
         filters = json.load(f)
 
     valid_item_filters = filters['item']
-
     valid_gem_filters = filters['gem']
-
     valid_gem_level_filters = filters['gem_levels']
-
     valid_weapon_filters = filters['weapon']
-
     valid_armour_filters = filters['armour']
-
     valid_passive_filters = filters['passives']
-
-    #No other way to tell if an item is an elder or shaper unique other than locally storing it at the moment
+    # No other way to tell if an item is an elder or shaper unique other than locally storing it at the moment
     shaper_items = filters['shaper']
-
     elder_items = filters['elder']
-
     operators = ['>', '<', '=']
 
     @staticmethod
     def extract_cargoquery(data):
         extracted = []
-        #if 'cargoquery' not in data:
-        #    print(data)
         for item in data['cargoquery']:
             extracted.append(item['title'])
         return extracted
@@ -55,9 +46,6 @@ class ClientBase:
     def _param_gen(self, where, filters):
         where_params = []
         for key, val in where.items():
-            #if key.lower() not in filters:
-             #  print(f"WARNING: {key} is not a valid filter, continuing without it.")
-              # continue
             if 'skill_id' in filters and key == 'name':
                 key = 'skill_levels._pageName'
             if val[0] in self.operators:
@@ -68,7 +56,6 @@ class ClientBase:
         return where_str
 
     def gem_param_gen(self, where):
-
         where_str = self._param_gen(where, self.valid_gem_filters)
         params = {
             'tables': "skill_levels,skill,items,skill_gems",
@@ -102,7 +89,7 @@ class ClientBase:
             params['limit'] = str(limit)
         return params
 
-    def passive_list_gen(self, data, req=None, url=None, where=None):
+    def passive_list_gen(self, data, req=None):
         result_list = self.extract_cargoquery(data)
         final_list = []
         for passive in result_list:
@@ -115,17 +102,19 @@ class ClientBase:
             reminder_text = passive.get("reminder text", None)
             stat_text = passive.get("stat text", None)
             int_id = passive.get("int id", None)
-            final_list.append(PassiveSkill(asc_class, flavor_text, icon, is_keystone, is_notable,
-                                           name, reminder_text, stat_text, int_id))
+            final_list.append(PassiveSkill(
+                asc_class, flavor_text, icon, is_keystone, is_notable, name, reminder_text, stat_text, int_id
+            ))
         return final_list
+
     @staticmethod
     def get_image_url(filename, req):
         query_url = "https://pathofexile.gamepedia.com/api.php?action=query"
         param = {
-                'titles': filename,
-                'prop': 'imageinfo&',
-                'iiprop': 'url'
-            }
+            'titles': filename,
+            'prop': 'imageinfo&',
+            'iiprop': 'url'
+        }
         dat = req(query_url, param)
         ic = dat['query']['pages'][list(dat['query']['pages'].keys())[0]].get('imageinfo', None)
         return ic[0]['url'] if ic else ic
@@ -133,8 +122,9 @@ class ClientBase:
     def get_gems(self, where: dict, req, url):
         params = self.gem_param_gen(where)
         data = req(url, params=params)
-        result_list = self.extract_cargoquery(data)
         final_list = []
+
+        result_list = self.extract_cargoquery(data)
         for gem in result_list:
             vendor_params = {
                 'tables': "vendor_rewards",
@@ -143,6 +133,7 @@ class ClientBase:
             }
             vendors_raw = req(url, params=vendor_params)
             vendors = self.extract_cargoquery(vendors_raw)
+
             for act in vendors:
                 act['classes'] = act['classes'].replace('�', ', ')
             stats_params = {
@@ -153,20 +144,25 @@ class ClientBase:
             stats_raw = req(url, params=stats_params)
             stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
-            #print(gem['has percentage mana cost'], gem['has reservation mana cost'])
+
             if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
                 aura = True
             else:
                 aura = False
+
             for stats_dict in stats_list:
                 stats[int(stats_dict['level'])] = stats_dict
-            requirements = Requirements(stats[1]['dexterity requirement'], stats[1]['strength requirement'],
-                                        stats[1]['intelligence requirement'], stats[1]['level requirement'])
+            requirements = Requirements(
+                stats[1]['dexterity requirement'], stats[1]['strength requirement'],
+                stats[1]['intelligence requirement'], stats[1]['level requirement']
+            )
+
             inv_icon = self.get_image_url(gem['inventory icon'], req)
             if gem['skill icon']:
                 skill_icon = self.get_image_url(gem['skill icon'], req)
             else:
                 skill_icon = None
+
             gem = Gem(gem["skill id"], gem["cast time"], gem["description"],
                       gem["name"], gem["item class restriction"], gem["stat text"],
                       gem["quality stat text"], gem["radius"],
@@ -177,13 +173,12 @@ class ClientBase:
                       aura, vendors, requirements)
             final_list.append(gem)
         return final_list
-    def item_list_gen(self, data, req=None, url=None, where=None):
+
+    def item_list_gen(self, data, req=None, url=None):
         result_list = self.extract_cargoquery(data)
         final_list = []
         influences = []
         for item in result_list:
-            shaper = False
-            elder = False
             if item['name'] in self.shaper_items:
                 influences.append("shaper")
             if item['name'] in self.elder_items:
@@ -197,6 +192,7 @@ class ClientBase:
                 data = req(url, params)
                 stats = self.extract_cargoquery(data)[0]
                 i = Weapon
+
             elif 'armour' in item['tags'].split(','):
                 if 'shield' in item['tags'].split(','):
                     params = {
@@ -205,22 +201,24 @@ class ClientBase:
                         'fields': f"{','.join(self.valid_armour_filters)},block_range_average",
                         'where': f'shields._pageName="{item["name"]}"'
                     }
+
                 else:
                     params = {
                         'tables': 'armours',
                         'fields': ','.join(self.valid_armour_filters),
                         'where': f'_pageName="{item["name"]}"'
                     }
-                #Only extra stat a shield has from other armours is the block chance
-                #So I didn't add it to a filter key and blah blah
+                # Only extra stat a shield has from other armours is the block chance
+                # So I didn't add it to a filter key and blah blah
                 data = req(url, params)
-                #print(data)
                 stats = self.extract_cargoquery(data)[0]
                 i = Armour
+
             elif 'gem' in item['tags'].split(','):
                 current_item = self.get_gems({'name': item['name']}, req, url)[0]
+
             elif 'divination_card' in item['tags'].split(','):
-                params ={
+                params = {
                     'tables': 'divination_cards, stackables',
                     'join_on': 'divination_cards._pageName=stackables._pageName',
                     'fields': 'card_art, stack_size',
@@ -228,25 +226,35 @@ class ClientBase:
                 }
                 data = self.extract_cargoquery(req(url, params))[0]
                 card_art = self.get_image_url(data['card art'], req)
-                soup = BS(html.unescape(item['html']))
+                soup = Soup(html.unescape(item['html']))
                 div_data = soup.select_one('span.divicard-reward span span')
+
                 if "[[Corrupted]]" in item['html']:
                     item['is corrupted'] = True
+
+                # FIXME: unresolved attribute
                 reward_flavour = div_data.attrs['class'][1][1:]
                 if reward_flavour == 'currency':
                     reward_flavour = 'normal'
+
+                # FIXME: unresolved attribute
                 matches = reg.findall(div_data.text)
-                if len(matches)>1:
+                if len(matches) > 1:
                     reward = matches[1].split('|')[1].strip(']]')
                 elif len(matches) == 1:
                     reward = matches[0].split('|')[1].strip(']]')
                 else:
+                    # FIXME: unresolved attribute
                     reward = div_data.text
-                stats = {'card_art': card_art,
-                         'stack_size': data['stack size'],
-                         'reward_flavor': reward_flavour,
-                         'reward': reward}
+
+                stats = {
+                    'card_art': card_art,
+                    'stack_size': data['stack size'],
+                    'reward_flavor': reward_flavour,
+                    'reward': reward
+                }
                 i = DivCard
+
             elif item['base item'] == "Prophecy":
                 params = {
                     'tables': 'prophecies',
@@ -259,22 +267,29 @@ class ClientBase:
             else:
                 stats = None
                 i = Item
-            #print(item['inventory icon'])
+
             if 'gem' not in item['tags'].split(','):
                 print(item['inventory icon'])
                 image_url = self.get_image_url(item['inventory icon'], req)
                 drops = ItemDrop(item['drop enabled'], item['drop level'],
                                  item['drop level maximum'], item['drop leagues'],
                                  item['drop areas'], item['drop text'])
-                requirements = Requirements(item['required dexterity'], item['required strength'],
-                                   item['required intelligence'], item['required level'])
+                requirements = Requirements(
+                    item['required dexterity'], item['required strength'],
+                    item['required intelligence'], item['required level']
+                )
 
-                current_item = i(item['base item'], item['class'], item['name'],
-                                 item['rarity'], (item['size x'], item['size y']), drops, requirements,
-                                 item['flavour text'], item['help text'], self.bool_(item['is corrupted']),
-                                 self.bool_(item['is relic']), item['alternate art inventory icons'],
-                                 item['quality'], item['implicit stat text'], item['explicit stat text'],
-                                 item['tags'], image_url, influences, stats)
+                # FIXME: referenced before assignment
+                current_item = i(
+                    item['base item'], item['class'], item['name'],
+                    item['rarity'], (item['size x'], item['size y']), drops, requirements,
+                    item['flavour text'], item['help text'], self.bool_(item['is corrupted']),
+                    self.bool_(item['is relic']), item['alternate art inventory icons'],
+                    item['quality'], item['implicit stat text'], item['explicit stat text'],
+                    # FIXME: referenced before assignment
+                    item['tags'], image_url, influences, stats
+                )
 
+            # FIXME: referenced before assignment
             final_list.append(current_item)
         return final_list

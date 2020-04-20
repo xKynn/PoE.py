@@ -1,2 +1,5 @@
-urllib3
+bs4
+numpy
 Pillow
+requests
+urllib3

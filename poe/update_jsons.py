@@ -1,8 +1,10 @@
-import os
 import json as js
+import os
+
 from poe import Client
 
 _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
+
 
 def update_keystones():
     cl = Client()
@@ -20,6 +22,7 @@ def update_ascendancy():
 
     with open(f"{_dir}/ascendancy.json", 'w+') as file:
         js.dump(asc_json, file)
+
 
 if __name__ == "__main__":
     update_keystones()
