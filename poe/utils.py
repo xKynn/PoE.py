@@ -236,7 +236,7 @@ class ItemRender:
                 elements = {
                     element.split('_')[0]: getattr(item, element) for element in [
                         'fire_damage', 'cold_damage', 'lightning_damage'
-                    ] if hasattr(item, element)
+                    ] if getattr(item, element)
                 }
                 if elements:
                     stats.append(self.prop("Elemental Damage:", elements, None))
@@ -856,26 +856,26 @@ def parse_pob_item(itemtext):
             variant = line.split(": ")[1]
             continue
 
-        elif line.startswith("Item Level"):
-            pobitem['type'] = "game"
-            if item[index + 3].startswith('--'):
-                offset = 2
-                if "(implicit)" not in item[index + offset]:
-                    pobitem['enchant'] = item[index + offset]
-                    offset = 4
-                if "(implicit)" in item[index + offset]:
-                    pobitem['implicits'] = 0
-                    for line_inner in item[index + offset:]:
-                        print(line_inner)
-                        if "(implicit)" in line_inner:
-                            pobitem['implicits'] = pobitem['implicits'] + 1
-                        if "---" in line_inner:
-                            break
-                    pobitem['statstart_index'] = index + offset + pobitem['implicits']
-                else:
-                    pobitem['statstart_index'] = index + offset
-            else:
-                pobitem['statstart_index'] = index + 2
+        # elif line.startswith("Item Level"):
+        #     pobitem['type'] = "game"
+        #     if item[index + 3].startswith('--'):
+        #         offset = 2
+        #         if "(implicit)" not in item[index + offset]:
+        #             pobitem['enchant'] = item[index + offset]
+        #             offset = 4
+        #         if "(implicit)" in item[index + offset]:
+        #             pobitem['implicits'] = 0
+        #             for line_inner in item[index + offset:]:
+        #                 print(line_inner)
+        #                 if "(implicit)" in line_inner:
+        #                     pobitem['implicits'] = pobitem['implicits'] + 1
+        #                 if "---" in line_inner:
+        #                     break
+        #             pobitem['statstart_index'] = index + offset + pobitem['implicits']
+        #         else:
+        #             pobitem['statstart_index'] = index + offset
+        #     else:
+        #         pobitem['statstart_index'] = index + 2
 
         elif line.startswith("====="):
             pobitem['statstart_index'] = index
