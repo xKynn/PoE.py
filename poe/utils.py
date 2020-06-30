@@ -808,7 +808,81 @@ class ItemRender:
         return item
 
 
+def parse_game_item(itemtext):
+    item = itemtext.split('\n')
+
+    groups = []
+    curr_group = []
+    for line in item:
+        if "---" in line:
+            groups.append(curr_group)
+            curr_group = []
+        else:
+            curr_group.append(line)
+    groups.append(curr_group)
+
+    pobitem = {'name': '', 'special': [], 'enchant': [],
+               'implicit': [], 'stats': [], 'quality': 0, 'type': "game"}
+
+    unmarked_blocks = 0
+
+    for group in groups:
+        if group[0].startswith('Rarity:'):
+            pobitem['rarity'] = group[0].split(' ')[1].title()
+            pobitem['base'] = group[len(group)-1]
+
+            if len(group) > 2:
+                pobitem['name'] = group[1]
+
+        # or group[0].startswith('Armour:') or group[0].startswith('Evasion Rating:') or group[0].startswith('Energy Shield:') or
+        elif group[0].startswith('Quality') or group[0].startswith('Map Tier:'):
+            for line in group:
+                if line.startswith('Quality:'):
+                    pobitem['quality'] = line.replace(
+                        'Quality: +', '').replace('% (augmented)', '')
+                elif line.startswith('Map Tier:') or line.startswith('Item Quantity:') or line.startswith('Item Rarity:'): # map stuff
+                    pobitem['implicit'].append(line)
+                elif line.startswith('Quality ('):  # catalysts
+                    pobitem['implicit'].append(line)
+        elif group[0].startswith('Requirements:'):
+            pass
+        elif group[0].startswith('Sockets:'):
+            pass
+        elif group[0].startswith('Item Level:'):
+            pass
+        elif group[0].startswith('Price:'):
+            pass
+        elif group[0].endswith('(enchant)'):
+            for line in group:
+                pobitem['enchant'].append(line.replace('(enchant)', ''))
+        elif group[0].endswith('(implicit)'):
+            for line in group:
+                pobitem['implicit'].append(line.replace('(implicit)', ''))
+        elif group[0].startswith('Corrupted'):
+            # should corrupted be an explicit?
+            pobitem['stats'].append('Corrupted')
+        elif group[0].endswith(' Item'):
+            for line in group:
+                pobitem['special'].append(line)
+        else:  # unid is an explicit
+            # if (groups.index(group) < len(group)-1) or len(pobitem['stats']) == 0:
+            if (unmarked_blocks == 0):
+                unmarked_blocks += 1
+                for line in group:
+                    pobitem['stats'].append(line)
+            else:  # flavor
+                pass
+
+    return {
+        'name': pobitem['name'], 'base': pobitem['base'], 'stats': pobitem['stats'], 'rarity': pobitem['rarity'],
+        'implicits': pobitem['implicit'], 'quality': pobitem['quality'], 'special': pobitem['special'],
+        'enchant': pobitem['enchant']
+    }
+
+
 def parse_pob_item(itemtext):
+    if "Implicits: " not in itemtext:
+        return parse_game_item(itemtext)
     item = itemtext.split('\n')
     item = [line for line in item if "---" not in line]
     qualtext = 0
