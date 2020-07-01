@@ -844,11 +844,20 @@ def parse_game_item(itemtext):
                 pobitem['name'] = group[1]
 
         # defense
-        elif group[0].startswith('Quality') or group[0].startswith('Map Tier:') or group[0].startswith('Chance to Block:') or group[0].startswith('Armour:') or group[0].startswith('Evasion Rating:') or group[0].startswith('Energy Shield:'):
+        elif (  group[0].startswith('Quality') or 
+                group[0].startswith('Map Tier:') or 
+                group[0].startswith('Chance to Block:') or 
+                group[0].startswith('Armour:') or 
+                group[0].startswith('Evasion Rating:') or 
+                group[0].startswith('Energy Shield:')):
             for line in group:
                 if line.startswith('Quality:'):
                     pobitem['quality'] = line.replace('Quality: +', '').replace('% (augmented)', '')
-                elif line.startswith('Map Tier:') or line.startswith('Item Quantity:') or line.startswith('Item Rarity:') or line.startswith('Monster Pack Size:') or line.startswith('Atlas Region:'): # map stuff
+                elif (  line.startswith('Map Tier:') or 
+                        line.startswith('Item Quantity:') or 
+                        line.startswith('Item Rarity:') or 
+                        line.startswith('Monster Pack Size:') or 
+                        line.startswith('Atlas Region:')): # map stuff
                     pobitem['implicit'].append(line)
                 elif line.startswith('Quality ('):  # catalysts
                     pobitem['implicit'].append(line)
