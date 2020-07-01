@@ -826,6 +826,8 @@ def parse_game_item(itemtext):
 
     unmarked_blocks = 0
 
+    print(item, groups)
+
     for group in groups:
         if group[0].startswith('Rarity:'):
             pobitem['rarity'] = group[0].split(' ')[1].title()
@@ -850,6 +852,14 @@ def parse_game_item(itemtext):
             pass
         elif group[0].startswith('Item Level:'):
             pass
+        elif group[0].startswith('Energy Shield:'):
+            pass
+        elif group[0].startswith('Armour:'):
+            pass
+        elif group[0].startswith('Evasion Rating:'):
+            pass
+        elif group[0].startswith('Chance to Block:'):
+            pass
         elif group[0].startswith('Price:'):
             pass
         elif group[0].endswith('(enchant)'):
@@ -868,10 +878,14 @@ def parse_game_item(itemtext):
             # if (groups.index(group) < len(group)-1) or len(pobitem['stats']) == 0:
             if (unmarked_blocks == 0):
                 unmarked_blocks += 1
+                print("appending stats")
                 for line in group:
+                    print(line)
                     pobitem['stats'].append(line)
             else:  # flavor
                 pass
+
+    print(pobitem)
 
     return {
         'name': pobitem['name'], 'base': pobitem['base'], 'stats': pobitem['stats'], 'rarity': pobitem['rarity'],
@@ -882,6 +896,7 @@ def parse_game_item(itemtext):
 
 def parse_pob_item(itemtext):
     if "Implicits: " not in itemtext:
+        print("not in")
         return parse_game_item(itemtext)
     item = itemtext.split('\n')
     item = [line for line in item if "---" not in line]
@@ -1029,14 +1044,15 @@ def parse_pob_item(itemtext):
         implicits = []
 
     stat_text = item[pobitem['statstart_index'] + 1:]
-    stat_text = [stat for stat in stat_text if not stat.startswith('--')]
+    stat_text = [stat for stat in stat_text if not stat.startswith('--')
+                 and not ":" in stat and stat]
     if '(' in base and ')' in base:
         base = base[:base.find('(') - 1]
     if "Synthesised" in base:
         base = base.replace("Synthesised", "").strip()
     if "Synthesised" in name:
         name = name.replace("Synthesised", "").strip()
-
+    print(implicits, stat_text)
     return {
         'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
         'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special'],
@@ -1067,7 +1083,7 @@ def modify_base_stats(item):
                 continue
             if ' per ' in text or ' if ' in text or ',' in text:
                 continue
-            if " to " in text and "multiplier" not in text:
+            if " to " in text and "multiplier" not in text and ":" not in text:
                 if 'armour' in text and isinstance(item, Armour):
                     stats['flat armour'] += int(text.split(' ')[0][1:])
                 elif 'evasion rating' in text and isinstance(item, Armour):
@@ -1076,7 +1092,8 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text and isinstance(item, Weapon):
                     stats['range'] += int(text.split(' ')[0][1:])
-                elif 'block' in text and 'spell damage' not in text and 'block recovery' not in text:
+                elif 'block' in text and 'spell damage' not in text and 'block recovery' not in text and \
+                        "maximum" not in text:
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and "reflect" not in text and "converted" not in text and isinstance(item, Weapon):
                     k = None
@@ -1101,7 +1118,8 @@ def modify_base_stats(item):
                     stats['inc evasion'] += int(text.split(' ')[0][:-1])
                 if "energy shield" in text and isinstance(item, Armour):
                     stats['inc es'] += int(text.split(' ')[0][:-1])
-                elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text:
+                elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text and \
+                        "maximum" not in text:
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text and isinstance(item, Weapon):
                     stats['aspd'] += int(text.split(' ')[0][:-1])
@@ -1126,7 +1144,7 @@ def modify_base_stats(item):
                 continue
             if ' per ' in text or ' if ' in text or ',' in text:
                 continue
-            if " to " in text and "multiplier" not in text:
+            if " to " in text and "multiplier" not in text and ":" not in text:
                 if 'armour' in text and isinstance(item, Armour):
                     stats['flat armour'] += int(text.split(' ')[0][1:])
                 elif 'evasion rating' in text and isinstance(item, Armour):
@@ -1135,7 +1153,8 @@ def modify_base_stats(item):
                     stats['flat es'] += int(text.split(' ')[0][1:])
                 elif 'weapon range' in text and isinstance(item, Weapon):
                     stats['range'] += int(text.split(' ')[0][1:])
-                elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text:
+                elif 'block' in text and 'block recovery' not in text and 'spell damage' not in text \
+                        and "maximum" not in text:
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and "reflect" not in text and "converted" not in text and isinstance(item, Weapon):
                     k = None
