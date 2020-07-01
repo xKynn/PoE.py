@@ -831,34 +831,46 @@ def parse_game_item(itemtext):
     for group in groups:
         if group[0].startswith('Rarity:'):
             pobitem['rarity'] = group[0].split(' ')[1].title()
+            
             pobitem['base'] = group[len(group)-1]
+            if 'Superior' in pobitem['base']:
+                pobitem['base'] = pobitem['base'].replace('Superior ', '')
+            if 'Synthesised' in pobitem['base']:
+                # is there a special nature for Synthesised items?
+                # if yes: pobitem['special'].append('Synthesised Item')
+                pobitem['base'] = pobitem['base'].replace('Synthesised', '')
 
             if len(group) > 2:
                 pobitem['name'] = group[1]
 
-        # or group[0].startswith('Armour:') or group[0].startswith('Evasion Rating:') or group[0].startswith('Energy Shield:') or
-        elif group[0].startswith('Quality') or group[0].startswith('Map Tier:'):
+        # defense
+        elif (  group[0].startswith('Quality') or 
+                group[0].startswith('Map Tier:') or 
+                group[0].startswith('Chance to Block:') or 
+                group[0].startswith('Armour:') or 
+                group[0].startswith('Evasion Rating:') or 
+                group[0].startswith('Energy Shield:')):
             for line in group:
                 if line.startswith('Quality:'):
-                    pobitem['quality'] = line.replace(
-                        'Quality: +', '').replace('% (augmented)', '')
-                elif line.startswith('Map Tier:') or line.startswith('Item Quantity:') or line.startswith('Item Rarity:'): # map stuff
+                    pobitem['quality'] = line.replace('Quality: +', '').replace('% (augmented)', '')
+                elif (  line.startswith('Map Tier:') or 
+                        line.startswith('Item Quantity:') or 
+                        line.startswith('Item Rarity:') or 
+                        line.startswith('Monster Pack Size:') or 
+                        line.startswith('Atlas Region:')): # map stuff
                     pobitem['implicit'].append(line)
                 elif line.startswith('Quality ('):  # catalysts
                     pobitem['implicit'].append(line)
+        # offense
+        elif group[len(group)-1].startswith('Attacks per Second:') or group[len(group)-1].startswith('Weapon Range:'):
+            # this filter is not trivial and not fully tested, due to large differences in weapon types and unique exceptions 
+            # trivial solution would be to check for every weapon type in the game
+            pass
         elif group[0].startswith('Requirements:'):
             pass
         elif group[0].startswith('Sockets:'):
             pass
         elif group[0].startswith('Item Level:'):
-            pass
-        elif group[0].startswith('Energy Shield:'):
-            pass
-        elif group[0].startswith('Armour:'):
-            pass
-        elif group[0].startswith('Evasion Rating:'):
-            pass
-        elif group[0].startswith('Chance to Block:'):
             pass
         elif group[0].startswith('Price:'):
             pass
