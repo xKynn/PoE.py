@@ -354,7 +354,8 @@ class ItemRender:
 
             try:
                 if item.enchant:
-                    stats.append(self.prop(item.enchant, '', CRAFTED))
+                    for enchant in item.enchant:
+                        stats.append(self.prop(enchant, '', CRAFTED))
                     stats.append(separator)
             except AttributeError:
                 pass
@@ -1087,7 +1088,7 @@ def modify_base_stats(item):
         'chaos max': 0, 'chaos inc': 0, 'phys low': 0, 'phys max': 0, 'phys inc': int(item.quality),
         'cc': 0, 'range': 0, 'block': 0
     }
-
+    print(item.implicits, item.explicits)
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
             text = stat.lower().replace('{crafted}', '').replace('{fractured}', '')
@@ -1196,6 +1197,7 @@ def modify_base_stats(item):
                 if "attack speed" in text and isinstance(item, Weapon):
                     stats['aspd'] += int(text.split(' ')[0][:-1])
                 if "critical strike chance" in text and isinstance(item, Weapon):
+                    print(text)
                     stats['cc'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and isinstance(item, Weapon):
                     if 'lightning' in text:
@@ -1215,7 +1217,10 @@ def modify_base_stats(item):
             item.attack_speed = f"{(_as + (stats['aspd'] / 100) * _as):.2}"
 
         if stats['cc']:
-            cc = 5.0
+            try:
+                cc = float(item.critical_chance.split("%")[0])
+            except:
+                cc = 5.0
             cc += cc * (stats['cc'] / 100)
             item.critical_chance = f"{cc:.2}%"
 
