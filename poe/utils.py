@@ -272,43 +272,46 @@ class ItemRender:
 
             elif 'gem' in item.tags:
                 stats.append(self.prop(item.gem_tags.replace(',', ', '), '', DESC_COLOR))
-                if item.stats_per_level[0]['mana multiplier']:
-                    stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
+
+                # Temp disable for bugged skill_levels table
+
+                # if item.stats_per_level[0]['mana multiplier']:
+                #     stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
                 if item.radius:
                     stats.append(self.prop("Radius: ", item.radius, None))
-                if not item.is_aura:
-                    # Enlighten Enhance etc only go up to 10
-                    try:
-                        stats.append(self.prop(
-                            "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})", PROP_COLOR)
-                        )
-                    except KeyError:
-                        stats.append(self.prop(
-                            "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})", PROP_COLOR)
-                        )
-                else:
-                    stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
+                # if not item.is_aura:
+                #     # Enlighten Enhance etc only go up to 10
+                #     try:
+                #         stats.append(self.prop(
+                #             "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})", PROP_COLOR)
+                #         )
+                #     except KeyError:
+                #         stats.append(self.prop(
+                #             "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})", PROP_COLOR)
+                #         )
+                # else:
+                #     stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
 
                 # Enlighten Enhance etc only go up to 10
-                try:
-                    if item.stats_per_level[20]['stored uses']:
-                        stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
-                except KeyError:
-                    if item.stats_per_level[10]['stored uses']:
-                        stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
+                # try:
+                #     if item.stats_per_level[20]['stored uses']:
+                #         stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
+                # except KeyError:
+                #     if item.stats_per_level[10]['stored uses']:
+                #         stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
 
-                if item.stats_per_level[0]['cooldown']:
-                    stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
-                if item.cast_time:
-                    stats.append(self.prop("Cast Time: ", f"{item.cast_time} sec", None))
-                if item.stats_per_level[0]['critical strike chance']:
-                    stats.append(
-                        self.prop("Critical Strike Chance: ", f"{item.stats_per_level[0]['critical strike chance']}%", None)
-                    )
-                if item.stats_per_level[0]['damage effectiveness']:
-                    stats.append(
-                        self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None)
-                    )
+                # if item.stats_per_level[0]['cooldown']:
+                #     stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
+                # if item.cast_time:
+                #     stats.append(self.prop("Cast Time: ", f"{item.cast_time} sec", None))
+                # if item.stats_per_level[0]['critical strike chance']:
+                #     stats.append(
+                #         self.prop("Critical Strike Chance: ", f"{item.stats_per_level[0]['critical strike chance']}%", None)
+                #     )
+                # if item.stats_per_level[0]['damage effectiveness']:
+                #     stats.append(
+                #         self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None)
+                #     )
                 stats.append(separator)
 
             elif item.base == 'Prophecy':
@@ -1136,7 +1139,7 @@ def modify_base_stats(item):
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text and isinstance(item, Weapon):
                     stats['aspd'] += int(text.split(' ')[0][:-1])
-                if "critical strike chance" in text and isinstance(item, Weapon):
+                if text.lower().endswith("critical strike chance") and isinstance(item, Weapon):
                     stats['cc'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and isinstance(item, Weapon):
                     if 'lightning' in text:
@@ -1196,8 +1199,7 @@ def modify_base_stats(item):
                     stats['block'] += int(text.split(' ')[0][:-1])
                 if "attack speed" in text and isinstance(item, Weapon):
                     stats['aspd'] += int(text.split(' ')[0][:-1])
-                if "critical strike chance" in text and isinstance(item, Weapon):
-                    print(text)
+                if text.lower().endswith("critical strike chance") and isinstance(item, Weapon):
                     stats['cc'] += int(text.split(' ')[0][:-1])
                 if "damage" in text and isinstance(item, Weapon):
                     if 'lightning' in text:
@@ -1217,6 +1219,7 @@ def modify_base_stats(item):
             item.attack_speed = f"{(_as + (stats['aspd'] / 100) * _as):.2}"
 
         if stats['cc']:
+            print(item.critical_chance.split("%")[0], stats['cc'])
             try:
                 cc = float(item.critical_chance.split("%")[0])
             except:

@@ -142,7 +142,8 @@ class ClientBase:
                 'where': f'''_pageName="{gem['name']}"'''
             }
             stats_raw = req(url, params=stats_params)
-            stats_list = self.extract_cargoquery(stats_raw)
+            print(stats_raw)
+            #stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
 
             if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
@@ -150,12 +151,19 @@ class ClientBase:
             else:
                 aura = False
 
-            for stats_dict in stats_list:
-                stats[int(stats_dict['level'])] = stats_dict
+            # for stats_dict in stats_list:
+            #     stats[int(stats_dict['level'])] = stats_dict
+
+            # Fix for broken skill_levels table.
             requirements = Requirements(
-                stats[1]['dexterity requirement'], stats[1]['strength requirement'],
-                stats[1]['intelligence requirement'], stats[1]['level requirement']
+                '-', '-',
+                '-', '-'
             )
+
+            # requirements = Requirements(
+            #     stats[1]['dexterity requirement'], stats[1]['strength requirement'],
+            #     stats[1]['intelligence requirement'], stats[1]['level requirement']
+            # )
 
             inv_icon = self.get_image_url(gem['inventory icon'], req)
             if gem['skill icon']:
