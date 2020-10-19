@@ -292,7 +292,7 @@ class ItemRender:
                 else:
                     stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
 
-                Enlighten Enhance etc only go up to 10
+                # Enlighten Enhance etc only go up to 10
                 try:
                     if item.stats_per_level[20]['stored uses']:
                         stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
