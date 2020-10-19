@@ -275,43 +275,43 @@ class ItemRender:
 
                 # Temp disable for bugged skill_levels table
 
-                # if item.stats_per_level[0]['mana multiplier']:
-                #     stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
+                if item.stats_per_level[0]['mana multiplier']:
+                    stats.append(self.prop("Mana Multiplier: ", f"{item.stats_per_level[0]['mana multiplier']}%", None))
                 if item.radius:
                     stats.append(self.prop("Radius: ", item.radius, None))
-                # if not item.is_aura:
-                #     # Enlighten Enhance etc only go up to 10
-                #     try:
-                #         stats.append(self.prop(
-                #             "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})", PROP_COLOR)
-                #         )
-                #     except KeyError:
-                #         stats.append(self.prop(
-                #             "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})", PROP_COLOR)
-                #         )
-                # else:
-                #     stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
+                if not item.is_aura:
+                    # Enlighten Enhance etc only go up to 10
+                    try:
+                        stats.append(self.prop(
+                            "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})", PROP_COLOR)
+                        )
+                    except KeyError:
+                        stats.append(self.prop(
+                            "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})", PROP_COLOR)
+                        )
+                else:
+                    stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
 
-                # Enlighten Enhance etc only go up to 10
-                # try:
-                #     if item.stats_per_level[20]['stored uses']:
-                #         stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
-                # except KeyError:
-                #     if item.stats_per_level[10]['stored uses']:
-                #         stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
+                Enlighten Enhance etc only go up to 10
+                try:
+                    if item.stats_per_level[20]['stored uses']:
+                        stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
+                except KeyError:
+                    if item.stats_per_level[10]['stored uses']:
+                        stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
 
-                # if item.stats_per_level[0]['cooldown']:
-                #     stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
-                # if item.cast_time:
-                #     stats.append(self.prop("Cast Time: ", f"{item.cast_time} sec", None))
-                # if item.stats_per_level[0]['critical strike chance']:
-                #     stats.append(
-                #         self.prop("Critical Strike Chance: ", f"{item.stats_per_level[0]['critical strike chance']}%", None)
-                #     )
-                # if item.stats_per_level[0]['damage effectiveness']:
-                #     stats.append(
-                #         self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None)
-                #     )
+                if item.stats_per_level[0]['cooldown']:
+                    stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
+                if item.cast_time:
+                    stats.append(self.prop("Cast Time: ", f"{item.cast_time} sec", None))
+                if item.stats_per_level[0]['critical strike chance']:
+                    stats.append(
+                        self.prop("Critical Strike Chance: ", f"{item.stats_per_level[0]['critical strike chance']}%", None)
+                    )
+                if item.stats_per_level[0]['damage effectiveness']:
+                    stats.append(
+                        self.prop("Damage Effectiveness: ", f"{item.stats_per_level[0]['damage effectiveness']}%", None)
+                    )
                 stats.append(separator)
 
             elif item.base == 'Prophecy':
