@@ -143,7 +143,7 @@ class ClientBase:
             }
             stats_raw = req(url, params=stats_params)
             print(stats_raw)
-            #stats_list = self.extract_cargoquery(stats_raw)
+            stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
 
             if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
