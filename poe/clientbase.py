@@ -35,8 +35,11 @@ class ClientBase:
     @staticmethod
     def extract_cargoquery(data):
         extracted = []
-        for item in data['cargoquery']:
-            extracted.append(item['title'])
+        if 'error' in data:
+            print(data['error'])
+        else:
+            for item in data['cargoquery']:
+                extracted.append(item['title'])
         return extracted
 
     @staticmethod
@@ -129,7 +132,7 @@ class ClientBase:
             vendor_params = {
                 'tables': "vendor_rewards",
                 'fields': "act,classes",
-                'where': f'''reward="{gem['name']}"'''
+                'where': f'''reward="{gem['name']}"''',
             }
             vendors_raw = req(url, params=vendor_params)
             vendors = self.extract_cargoquery(vendors_raw)
@@ -142,7 +145,6 @@ class ClientBase:
                 'where': f'''_pageName="{gem['name']}"'''
             }
             stats_raw = req(url, params=stats_params)
-            print(stats_raw)
             stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
 
