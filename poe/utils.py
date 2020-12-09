@@ -874,6 +874,8 @@ def parse_game_item(itemtext):
             pass
         elif group[0].startswith('Sockets:'):
             pass
+        elif group[0].startswith('Talisman Tier:'):
+            pass
         elif group[0].startswith('Item Level:'):
             pass
         elif group[0].startswith('Price:'):
@@ -1883,7 +1885,7 @@ def poe_skill_tree(hashes, asc: str = "None", return_keystones=False, return_asc
 
 
 def get_active_leagues():
-    http = urllib3.PoolManager()
+    http = urllib3.PoolManager(headers={'user-agent': "PoE.py / urllib3"})
     resp = http.request('GET', 'https://www.pathofexile.com/api/trade/data/leagues')
     if resp.status != 200:
         raise RequestException(resp.data.decode('utf-8'))
@@ -1894,11 +1896,12 @@ def get_active_leagues():
 
 
 def _trade_api_query(data, league, endpoint):
-    http = urllib3.PoolManager()
+    http = urllib3.PoolManager(headers={'user-agent': "PoE.py / urllib3"})
     print(js.dumps(data).encode('utf-8'))
     resp = http.request(
         'POST', f'https://www.pathofexile.com/api/trade/{endpoint}/{league}',
-        body=js.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'}
+        body=js.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json',
+                                                      'user-agent': "PoE.py / urllib3"}
     )
 
     if resp.status != 200:
