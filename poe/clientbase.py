@@ -1,4 +1,5 @@
 import html
+import traceback
 import json
 import os
 
@@ -37,6 +38,7 @@ class ClientBase:
         extracted = []
         if 'error' in data:
             print(data['error'])
+            print(traceback.format_stack())
         else:
             for item in data['cargoquery']:
                 extracted.append(item['title'])
@@ -132,7 +134,7 @@ class ClientBase:
             vendor_params = {
                 'tables': "vendor_rewards",
                 'fields': "act,classes",
-                'where': f'''reward="{gem['name']}"''',
+                'where': f'''_pageName="{gem['name']}"''',
             }
             vendors_raw = req(url, params=vendor_params)
             vendors = self.extract_cargoquery(vendors_raw)
