@@ -135,6 +135,18 @@ class ItemRender:
             ('2', '3'): Image.open(f'{_dir}//elder_bg_2x3.png').convert('RGBA'),
             ('2', '4'): Image.open(f'{_dir}//elder_bg_2x4.png').convert('RGBA'),
         }
+        self.r_socket = Image.open(f'{_dir}//rsocket.png').convert('RGBA')
+        self.g_socket = Image.open(f'{_dir}//gsocket.png').convert('RGBA')
+        self.b_socket = Image.open(f'{_dir}//bsocket.png').convert('RGBA')
+        self.a_socket = Image.open(f'{_dir}//asocket.png').convert('RGBA')
+        self.w_socket = Image.open(f'{_dir}//wsocket.png').convert('RGBA')
+        self.soc_kv = {'R': self.r_socket,
+                       'G': self.g_socket,
+                       'B': self.b_socket,
+                       'W': self.w_socket,
+                       'A': self.a_socket}
+        self.link = Image.open(f'{_dir}//link.png').convert('RGBA')
+        self.link_v = Image.open(f'{_dir}//linkv.png').convert('RGBA')
 
         # A namedtuple to handle properties.
         # This works fairly well except for Separators which is kinda hacky
@@ -725,6 +737,105 @@ class ItemRender:
                 if not isinstance(poe_item, Gem) and 'elder' in poe_item.influences:
                     ic = Image.alpha_composite(self.elder_backgrounds[poe_item.size].resize(ic.size), ic)
 
+                if not isinstance(poe_item, Gem) and poe_item.sockets:
+                    socs = poe_item.sockets.split(" ")
+                    socs = [[g,] if len(g)== 1 else g.split('-') for g in socs]
+                    print(socs)
+                    soc_num = 0
+                    for g in socs:
+                        if isinstance(g, list):
+                            for soc in g:
+                                soc_num += 1
+                        else:
+                            soc_num += 1
+
+                    if int(poe_item.size[0]) < 2:
+                        sockets = Image.new('RGBA', (self.b_socket.size[0],
+                                                     ((soc_num * self.b_socket.size[1]) +
+                                                      ((soc_num - 1) * (self.link_v.size[1])))), (255, 0, 0, 0))
+                        soc_counter = 1
+                        soc_x = 0
+                        soc_y = 0
+                        for grp in socs:
+                            if not isinstance(grp, list):
+                                soc = grp
+                                sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
+
+                                soc_y += 34 + self.link_v.size[1]
+                                soc_counter += 1
+
+                            elif isinstance(grp, list):
+                                for cnt, soc in enumerate(grp):
+                                    print(soc, " ", soc_x, ", ", soc_y)
+                                    sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
+                                    if cnt + 1 != len(grp):
+                                        sockets.alpha_composite(self.link_v, (soc_x + 9, soc_y + 32))
+
+                                    soc_y += 31 + self.link_v.size[1]
+                                    soc_counter += 1
+                        tw = int(sockets.size[0] + (sockets.size[0] * 0.50))
+                        th = int(sockets.size[1] + (sockets.size[1] * 0.50))
+                        sockets = sockets.resize((tw, th), Image.ANTIALIAS)
+                        pw = int((ic.size[0] - sockets.size[0]) / 2)
+                        ph = int((ic.size[1] - sockets.size[1]) / 2)
+                        ic.alpha_composite(sockets, (pw, ph))
+
+                    else:
+                        if soc_num%2 > 0:
+                            sch = (soc_num+1)/2
+                        else:
+                            sch = soc_num/2
+
+                        print("sch ", sch)
+
+                        if soc_num >= 2:
+                            w = (self.b_socket.size[0]*2) + self.link.size[0]
+                        else:
+                            w = self.b_socket.size[0]
+
+                        sockets = Image.new('RGBA', (w, int((sch*self.b_socket.size[1])+
+                                                      ((sch-1)*(self.link_v.size[1])))), (255, 0, 0, 0))
+                        soc_counter = 1
+                        soc_x = 0
+                        soc_y = 0
+                        for grp in socs:
+                            if not isinstance(grp, list):
+                                soc = grp
+                                sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
+
+                                if soc_counter == [1, 5]:
+                                    soc_x += 34 + self.link.size[0]
+                                if soc_counter in [2, 4]:
+                                    soc_y += 34 + self.link_v.size[1]
+                                if soc_counter == 3:
+                                    soc_x = 1
+
+                                soc_counter += 1
+
+                            elif isinstance(grp, list):
+                                for cnt, soc in enumerate(grp):
+                                    print(soc, " ", soc_x, ", ", soc_y)
+                                    sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
+                                    if cnt+1 != len(grp):
+                                        if soc_counter in [1, 4, 5]:
+                                            sockets.alpha_composite(self.link, (soc_x + 33, soc_y + 11))
+                                        if soc_counter in [2, 4]:
+                                            sockets.alpha_composite(self.link_v, (soc_x + 9, soc_y + 32))
+
+                                    if soc_counter in [1, 5]:
+                                        soc_x += 33 + self.link.size[0]
+                                    if soc_counter in [2, 4]:
+                                        soc_y += 31 + self.link_v.size[1]
+                                    if soc_counter == 3:
+                                        soc_x = 1
+
+                                    soc_counter += 1
+                        tw = int(sockets.size[0] + (sockets.size[0]*0.50))
+                        th = int(sockets.size[1] + (sockets.size[1]*0.50))
+                        sockets = sockets.resize((tw, th), Image.ANTIALIAS)
+                        pw = int((ic.size[0] - sockets.size[0]) / 2)
+                        ph = int((ic.size[1] - sockets.size[1]) / 2)
+                        ic.alpha_composite(sockets, (pw, ph))
                 item.alpha_composite(ic, cur.pos)
                 cur.move_y(stat.text.size[1])
                 cur.reset_x()
@@ -825,7 +936,7 @@ def parse_game_item(itemtext):
             curr_group.append(line)
     groups.append(curr_group)
 
-    pobitem = {'name': '', 'special': [], 'enchant': [],
+    pobitem = {'name': '', 'special': [], 'enchant': [], 'sockets': None,
                'implicit': [], 'stats': [], 'quality': 0, 'type': "game"}
 
     unmarked_blocks = 0
@@ -873,7 +984,8 @@ def parse_game_item(itemtext):
         elif group[0].startswith('Requirements:'):
             pass
         elif group[0].startswith('Sockets:'):
-            pass
+            for line in group:
+                pobitem['sockets'] = line.split(': ')[-1].strip(' ')
         elif group[0].startswith('Talisman Tier:'):
             pass
         elif group[0].startswith('Item Level:'):
@@ -908,7 +1020,7 @@ def parse_game_item(itemtext):
     return {
         'name': pobitem['name'], 'base': pobitem['base'], 'stats': pobitem['stats'], 'rarity': pobitem['rarity'],
         'implicits': pobitem['implicit'], 'quality': pobitem['quality'], 'special': pobitem['special'],
-        'enchant': pobitem['enchant']
+        'enchant': pobitem['enchant'], 'sockets': pobitem['sockets']
     }
 
 
@@ -920,7 +1032,7 @@ def parse_pob_item(itemtext):
     item = [line for line in item if "---" not in line]
     qualtext = 0
     variant = None
-    pobitem = {'special': [], 'enchant': "", 'type': None}
+    pobitem = {'special': [], 'enchant': "", 'type': None, 'sockets': None}
     for index, line in enumerate(item):
         if "{variant:" in line:
             variant_now = line[line.index("t:") + 2:line.index("}")].split(',')
@@ -991,6 +1103,9 @@ def parse_pob_item(itemtext):
             pobitem['type'] = 'pob'
             pobitem['implicits'] = int(line.split(': ')[1])
             pobitem['statstart_index'] = index + pobitem['implicits']
+
+        elif line.startswith("Sockets:"):
+            pobitem['sockets'] = line.split(": ")[1]
 
         elif "(enchant)" in line or "(implicit)" in line:
             if 'implicits' not in pobitem:
@@ -1074,7 +1189,7 @@ def parse_pob_item(itemtext):
     return {
         'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
         'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special'],
-        'enchant': pobitem['enchant']
+        'enchant': pobitem['enchant'], 'sockets': pobitem['sockets']
     }
 
 
@@ -1442,6 +1557,8 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
         else:
             modify_base_stats(wiki_base)
 
+    if item['sockets']:
+        wiki_base.sockets = item['sockets']
     if item['special']:
         for influence in item['special']:
             if influence == "Shaper Item":
@@ -1908,6 +2025,7 @@ def _trade_api_query(data, league, endpoint):
         raise RequestException(resp.data.decode('utf-8'))
 
     json_result = js.loads(resp.data.decode('utf-8'))
+
     listing_ids = json_result['result']
 
     entries = http.request('GET', f'https://www.pathofexile.com/api/trade/fetch/{",".join(listing_ids[:10])}')

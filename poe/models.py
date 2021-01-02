@@ -49,6 +49,7 @@ class Item:
         self.icon = icon
         self.influences = influences
         self.enchant = None
+        self.sockets = None
 
     def __repr__(self):
         return f"<Item: name={self.name} rarity={self.rarity}>"
