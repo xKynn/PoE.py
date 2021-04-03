@@ -773,9 +773,11 @@ class ItemRender:
 
                                     soc_y += 31 + self.link_v.size[1]
                                     soc_counter += 1
-                        tw = int(sockets.size[0] + (sockets.size[0] * 0.50))
-                        th = int(sockets.size[1] + (sockets.size[1] * 0.50))
+                        tw = int(sockets.size[0] + (sockets.size[0] * 0.40))
+                        th = int(sockets.size[1] + (sockets.size[1] * 0.40))
                         sockets = sockets.resize((tw, th), Image.ANTIALIAS)
+                        print(ic.size[0], ic.size[1])
+                        print(sockets.size[0], sockets.size[1])
                         pw = int((ic.size[0] - sockets.size[0]) / 2)
                         ph = int((ic.size[1] - sockets.size[1]) / 2)
                         ic.alpha_composite(sockets, (pw, ph))
@@ -808,7 +810,7 @@ class ItemRender:
                                 if soc_counter in [2, 4]:
                                     soc_y += 34 + self.link_v.size[1]
                                 if soc_counter == 3:
-                                    soc_x = 1
+                                    soc_x = 0
 
                                 soc_counter += 1
 
@@ -827,12 +829,14 @@ class ItemRender:
                                     if soc_counter in [2, 4]:
                                         soc_y += 31 + self.link_v.size[1]
                                     if soc_counter == 3:
-                                        soc_x = 1
+                                        soc_x = 0
 
                                     soc_counter += 1
-                        tw = int(sockets.size[0] + (sockets.size[0]*0.50))
-                        th = int(sockets.size[1] + (sockets.size[1]*0.50))
+                        tw = int(sockets.size[0] + (sockets.size[0]*0.40))
+                        th = int(sockets.size[1] + (sockets.size[1]*0.40))
                         sockets = sockets.resize((tw, th), Image.ANTIALIAS)
+                        print(ic.size[0], ic.size[1])
+                        print(sockets.size[0], sockets.size[1])
                         pw = int((ic.size[0] - sockets.size[0]) / 2)
                         ph = int((ic.size[1] - sockets.size[1]) / 2)
                         ic.alpha_composite(sockets, (pw, ph))
