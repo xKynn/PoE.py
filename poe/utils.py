@@ -948,8 +948,8 @@ def parse_game_item(itemtext):
     print(item, groups)
 
     for group in groups:
-        if group[0].startswith('Rarity:'):
-            pobitem['rarity'] = group[0].split(' ')[1].title()
+        if group[0].startswith('Item Class:'):
+            pobitem['rarity'] = group[1].split(' ')[1].title()
             
             pobitem['base'] = group[len(group)-1]
             if 'Superior' in pobitem['base']:
@@ -960,14 +960,15 @@ def parse_game_item(itemtext):
                 pobitem['base'] = pobitem['base'].replace('Synthesised', '')
 
             if len(group) > 2:
-                pobitem['name'] = group[1]
+                pobitem['name'] = group[2]
 
         # defense
         elif (  group[0].startswith('Quality') or 
                 group[0].startswith('Map Tier:') or 
                 group[0].startswith('Chance to Block:') or 
                 group[0].startswith('Armour:') or 
-                group[0].startswith('Evasion Rating:') or 
+                group[0].startswith('Evasion Rating:') or
+                group[0].startswith('Item Class:') or
                 group[0].startswith('Energy Shield:')):
             for line in group:
                 if line.startswith('Quality:'):
