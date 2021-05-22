@@ -49,6 +49,7 @@ class Client(ClientBase):
     def find_items(self, where: dict, limit=None):
         params = self.item_param_gen(where, limit)
         data = self.request_gen(self.base_url, params=params)
+        #print(where)
         return self.item_list_gen(data, self.request_gen, self.base_url)
 
     def find_gems(self, where: dict):

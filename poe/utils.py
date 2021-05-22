@@ -79,6 +79,8 @@ def unescape_to_list(props, ret_matches=False):
     matches = reg.findall(props)
     has_table = Soup(html.unescape(props)).select_one('table.mw-collapsed tr')
     if not has_table:
+        has_table = Soup(html.unescape(props)).select_one('table.random-modifier-stats tr')
+    if not has_table:
         for match in set(matches):
             if '|' in match:
                 props = props.replace(match, match.split('|')[1].strip(']]'))
@@ -580,6 +582,7 @@ class ItemRender:
 
     def render(self, poe_item):
         stats = self.sort_stats(poe_item)
+        print(stats)
         fill = flavor_color[self.flavor]
         try:
             if self.header_font.getsize(poe_item.name) > self.header_font.getsize(poe_item.base):
@@ -1039,6 +1042,8 @@ def parse_pob_item(itemtext):
     variant = None
     pobitem = {'special': [], 'enchant': "", 'type': None, 'sockets': None}
     for index, line in enumerate(item):
+        if "{tags:" in line:
+            line = line.replace(line[line.index("tags:") - 1:line.index("}") + 1], "")
         if "{variant:" in line:
             variant_now = line[line.index("t:") + 2:line.index("}")].split(',')
             if variant not in variant_now:
@@ -1435,46 +1440,47 @@ def modify_base_stats(item):
 
 
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue=None):
-    try:
+    if 1:
         assert item['rarity'].lower()
-    except Exception:
+    else:
         pass
 
-    if item['rarity'].lower() in ['unique', 'relic'] and char_api:
-        try:
-            wiki_base = cl.find_items({'name': item['name']})[0]
-        except IndexError:
-            ex = AbsentItemBaseException(f"Could not find {item['name']}")
-            if thread_exc_queue:
-                thread_exc_queue.put(ex)
-            return
-        if not wiki_base:
-            pass
+    # if item['rarity'].lower() in ['unique', 'relic'] and char_api:
+    #     if 1:
+    #         print(item)
+    #         wiki_base = cl.find_items({'name': item['name']})[0]
+    #     else:
+    #         ex = AbsentItemBaseException(f"Could not find {item['name']}")
+    #         if thread_exc_queue:
+    #             thread_exc_queue.put(ex)
+    #         return
+    #     if not wiki_base:
+    #         pass
+    #
+    #     if isinstance(wiki_base, Weapon):
+    #         wiki_base.attack_speed = item.get('attack_speed', 0)
+    #         wiki_base.chaos_min = item.get('chaos_min', 0)
+    #         wiki_base.chaos_max = item.get('chaos_max', 0)
+    #         wiki_base.cold_min = item.get('cold_min', 0)
+    #         wiki_base.cold_max = item.get('cold_max', 0)
+    #         wiki_base.fire_min = item.get('fire_min', 0)
+    #         wiki_base.fire_max = item.get('fire_max', 0)
+    #         wiki_base.lightning_min = item.get('lightning_min', 0)
+    #         wiki_base.lightning_max = item.get('lightning_max', 0)
+    #         wiki_base.physical_min = item.get('physical_min', 0)
+    #         wiki_base.physical_max = item.get('physical_max', 0)
+    #         wiki_base.range = item.get('range', 0)
+    #         wiki_base.critical_chance = item.get('critical_chance', 0)
+    #
+    #     elif isinstance(wiki_base, Armour):
+    #         wiki_base.armour = item.get('armour', 0)
+    #         wiki_base.evasion = item.get('evasion', 0)
+    #         wiki_base.energy_shield = item.get('energy_shield', 0)
+    #
+    #     if item['rarity'].lower() == 'relic':
+    #         wiki_base.rarity = 'relic'
 
-        if isinstance(wiki_base, Weapon):
-            wiki_base.attack_speed = item.get('attack_speed', 0)
-            wiki_base.chaos_min = item.get('chaos_min', 0)
-            wiki_base.chaos_max = item.get('chaos_max', 0)
-            wiki_base.cold_min = item.get('cold_min', 0)
-            wiki_base.cold_max = item.get('cold_max', 0)
-            wiki_base.fire_min = item.get('fire_min', 0)
-            wiki_base.fire_max = item.get('fire_max', 0)
-            wiki_base.lightning_min = item.get('lightning_min', 0)
-            wiki_base.lightning_max = item.get('lightning_max', 0)
-            wiki_base.physical_min = item.get('physical_min', 0)
-            wiki_base.physical_max = item.get('physical_max', 0)
-            wiki_base.range = item.get('range', 0)
-            wiki_base.critical_chance = item.get('critical_chance', 0)
-
-        elif isinstance(wiki_base, Armour):
-            wiki_base.armour = item.get('armour', 0)
-            wiki_base.evasion = item.get('evasion', 0)
-            wiki_base.energy_shield = item.get('energy_shield', 0)
-
-        if item['rarity'].lower() == 'relic':
-            wiki_base.rarity = 'relic'
-
-    elif item['rarity'].lower() in ['unique', 'relic']:
+    if item['rarity'].lower() in ['unique', 'relic']:
         real_base = cl.find_items({'name': item['base']})[0]
         try:
             wiki_base = cl.find_items({'name': item['name']})[0]
@@ -1761,7 +1767,8 @@ def parse_poe_char_api(json, cl, items_only=False):
         1: "Magic",
         2: "Rare",
         3: "Unique",
-        4: "Gem"
+        4: "Gem",
+        9: "Relic"
     }
     equipped = {}
     threads = []

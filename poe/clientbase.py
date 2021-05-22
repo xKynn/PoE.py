@@ -199,7 +199,8 @@ class ClientBase:
                 params = {
                     'tables': 'weapons',
                     'fields': ','.join(self.valid_weapon_filters),
-                    'where': f'_pageName="{item["name"]}"'
+                    'where': '_pageName='
+                             f'"{item["base item"] if item["rarity"] in ["Unique", "Relic"] else item["name"]}"'
                 }
                 data = req(url, params)
                 stats = self.extract_cargoquery(data)[0]
@@ -211,14 +212,16 @@ class ClientBase:
                         'tables': 'armours, shields',
                         'join_on': 'armours._pageName=shields._pageName',
                         'fields': f"{','.join(self.valid_armour_filters)},block_range_average",
-                        'where': f'shields._pageName="{item["name"]}"'
+                        'where': 'shields._pageName='
+                                 f'"{item["base item"] if item["rarity"] in ["Unique", "Relic"] else item["name"]}"'
                     }
 
                 else:
                     params = {
                         'tables': 'armours',
                         'fields': ','.join(self.valid_armour_filters),
-                        'where': f'_pageName="{item["name"]}"'
+                        'where': '_pageName='
+                                 f'"{item["base item"] if item["rarity"] in ["Unique", "Relic"] else item["name"]}"'
                     }
                 # Only extra stat a shield has from other armours is the block chance
                 # So I didn't add it to a filter key and blah blah
@@ -281,7 +284,7 @@ class ClientBase:
                 i = Item
 
             if 'gem' not in item['tags'].split(','):
-                print(item['inventory icon'])
+                #print(item['inventory icon'])
                 image_url = self.get_image_url(item['inventory icon'], req)
                 drops = ItemDrop(item['drop enabled'], item['drop level'],
                                  item['drop level maximum'], item['drop leagues'],
