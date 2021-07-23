@@ -82,24 +82,24 @@ class Weapon(Item):
         super().__init__(base, item_class, name, rarity, size, drop, requirements, lore, help_text, is_corrupted,
                          is_relic, alt_art, quality, implicits, explicits, tags, icon, influences)
 
-        self.attack_speed = weapon_stats['attack speed range text']
-        self.chaos_min = weapon_stats['chaos damage min range text']
-        self.chaos_max = weapon_stats['chaos damage max range text']
+        self.attack_speed = weapon_stats['attack speed']
+        self.chaos_min = weapon_stats['chaos damage min']
+        self.chaos_max = weapon_stats['chaos damage max']
 
-        self.cold_min = weapon_stats['cold damage min range text']
-        self.cold_max = weapon_stats['cold damage max range text']
+        self.cold_min = weapon_stats['cold damage min']
+        self.cold_max = weapon_stats['cold damage max']
 
-        self.fire_min = weapon_stats['fire damage min range text']
-        self.fire_max = weapon_stats['fire damage max range text']
+        self.fire_min = weapon_stats['fire damage min']
+        self.fire_max = weapon_stats['fire damage max']
 
-        self.lightning_min = weapon_stats['lightning damage min range text']
-        self.lightning_max = weapon_stats['lightning damage max range text']
+        self.lightning_min = weapon_stats['lightning damage min']
+        self.lightning_max = weapon_stats['lightning damage max']
 
-        self.physical_min = weapon_stats['physical damage min range text']
-        self.physical_max = weapon_stats['physical damage max range text']
+        self.physical_min = weapon_stats['physical damage min']
+        self.physical_max = weapon_stats['physical damage max']
 
-        self.range = f"{weapon_stats['weapon range range text']}"
-        self.critical_chance = f"{weapon_stats['critical strike chance range text']}"
+        self.range = f"{weapon_stats['weapon range']}"
+        self.critical_chance = f"{weapon_stats['critical strike chance']}"
         self.quality = 20
     
     @property
@@ -143,18 +143,18 @@ class Armour(Item):
                  is_relic, alt_art, quality, implicits, explicits, tags, icon, influences, armour_stats):
         super().__init__(base, item_class, name, rarity, size, drop, requirements, lore, help_text, is_corrupted,
                          is_relic, alt_art, quality, implicits, explicits, tags, icon, influences)
-        if armour_stats['armour range text'] != '0':
-            self.armour = armour_stats['armour range text']
+        if armour_stats['armour'] != '0':
+            self.armour = armour_stats['armour']
         else:
             self.armour = None
 
-        if armour_stats['evasion range text'] != '0':
-            self.evasion = armour_stats['evasion range text']
+        if armour_stats['evasion'] != '0':
+            self.evasion = armour_stats['evasion']
         else:
             self.evasion = None
 
-        if armour_stats['energy shield range text'] != '0':
-            self.energy_shield = armour_stats['energy shield range text']
+        if armour_stats['energy shield'] != '0':
+            self.energy_shield = armour_stats['energy shield']
         else:
             self.energy_shield = None
 

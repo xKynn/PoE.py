@@ -309,10 +309,10 @@ class ItemRender:
                 # Enlighten Enhance etc only go up to 10
                 try:
                     if item.stats_per_level[20]['stored uses']:
-                        stats.append(self.prop("Stored Uses", {item.stats_per_level[20]['stored uses']}, None))
+                        stats.append(self.prop("Stored Uses", f"{item.stats_per_level[20]['stored uses']}", None))
                 except KeyError:
                     if item.stats_per_level[10]['stored uses']:
-                        stats.append(self.prop("Stored Uses", {item.stats_per_level[10]['stored uses']}, None))
+                        stats.append(self.prop("Stored Uses", f"{item.stats_per_level[10]['stored uses']}", None))
 
                 if item.stats_per_level[0]['cooldown']:
                     stats.append(self.prop("Cooldown Time: ", f"{item.stats_per_level[0]['cooldown']} sec", None))
@@ -382,9 +382,13 @@ class ItemRender:
                     desc = item.description.split(' ')
                     description = [desc[x:x + 7] for x in range(0, len(desc), 7)]
                     for line in description:
-                        stats.append(self.prop(' '.join(line), '', GEM_COLOR))
+                        stats.append(self.prop(' '.join(line.replace("&lt;br&gt;"," ")), '', GEM_COLOR))
                 else:
-                    stats.append(self.prop(item.description, '', GEM_COLOR))
+                    if len(item.description.split("&lt;br&gt;")) > 1:
+                        for line in item.description.split("&lt;br&gt;"):
+                            stats.append(self.prop(line, '', GEM_COLOR))
+                    else:
+                        stats.append(self.prop(item.description, '', GEM_COLOR))
                 stats.append(separator)
 
                 if item.quality_bonus:
@@ -519,6 +523,7 @@ class ItemRender:
                 else:
                     stats.append(self.prop("Lore", item.flavor_text, UNIQUE_COLOR))
 
+        ##print(stats)
         return stats
 
     def render_divcard(self, card):
@@ -582,7 +587,7 @@ class ItemRender:
 
     def render(self, poe_item):
         stats = self.sort_stats(poe_item)
-        print(stats)
+        #print(stats)
         fill = flavor_color[self.flavor]
         try:
             if self.header_font.getsize(poe_item.name) > self.header_font.getsize(poe_item.base):
@@ -743,7 +748,7 @@ class ItemRender:
                 if not isinstance(poe_item, Gem) and poe_item.sockets:
                     socs = poe_item.sockets.split(" ")
                     socs = [[g,] if len(g)== 1 else g.split('-') for g in socs]
-                    print(socs)
+                    #print(socs)
                     soc_num = 0
                     for g in socs:
                         if isinstance(g, list):
@@ -769,7 +774,7 @@ class ItemRender:
 
                             elif isinstance(grp, list):
                                 for cnt, soc in enumerate(grp):
-                                    print(soc, " ", soc_x, ", ", soc_y)
+                                    #print(soc, " ", soc_x, ", ", soc_y)
                                     sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
                                     if cnt + 1 != len(grp):
                                         sockets.alpha_composite(self.link_v, (soc_x + 9, soc_y + 32))
@@ -779,8 +784,8 @@ class ItemRender:
                         tw = int(sockets.size[0] + (sockets.size[0] * 0.40))
                         th = int(sockets.size[1] + (sockets.size[1] * 0.40))
                         sockets = sockets.resize((tw, th), Image.ANTIALIAS)
-                        print(ic.size[0], ic.size[1])
-                        print(sockets.size[0], sockets.size[1])
+                        #print(ic.size[0], ic.size[1])
+                        #print(sockets.size[0], sockets.size[1])
                         pw = int((ic.size[0] - sockets.size[0]) / 2)
                         ph = int((ic.size[1] - sockets.size[1]) / 2)
                         ic.alpha_composite(sockets, (pw, ph))
@@ -791,7 +796,7 @@ class ItemRender:
                         else:
                             sch = soc_num/2
 
-                        print("sch ", sch)
+                        #print("sch ", sch)
 
                         if soc_num >= 2:
                             w = (self.b_socket.size[0]*2) + self.link.size[0]
@@ -819,7 +824,7 @@ class ItemRender:
 
                             elif isinstance(grp, list):
                                 for cnt, soc in enumerate(grp):
-                                    print(soc, " ", soc_x, ", ", soc_y)
+                                    #print(soc, " ", soc_x, ", ", soc_y)
                                     sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
                                     if cnt+1 != len(grp):
                                         if soc_counter in [1, 4, 5]:
@@ -838,8 +843,8 @@ class ItemRender:
                         tw = int(sockets.size[0] + (sockets.size[0]*0.40))
                         th = int(sockets.size[1] + (sockets.size[1]*0.40))
                         sockets = sockets.resize((tw, th), Image.ANTIALIAS)
-                        print(ic.size[0], ic.size[1])
-                        print(sockets.size[0], sockets.size[1])
+                        #print(ic.size[0], ic.size[1])
+                        #print(sockets.size[0], sockets.size[1])
                         pw = int((ic.size[0] - sockets.size[0]) / 2)
                         ph = int((ic.size[1] - sockets.size[1]) / 2)
                         ic.alpha_composite(sockets, (pw, ph))
@@ -880,6 +885,7 @@ class ItemRender:
                 d.text(cur.pos, stat.text + " ", font=self.font)
                 cur.move_x(self.font.getsize(stat.text + " ")[0])
                 d.text(cur.pos, "Use(s)", fill=DESC_COLOR, font=self.font)
+                cur.move_y(STAT_HEIGHT)
                 cur.reset_x()
 
             elif stat.title == "Gem Help":
@@ -948,7 +954,7 @@ def parse_game_item(itemtext):
 
     unmarked_blocks = 0
 
-    print(item, groups)
+    #print(item, groups)
 
     for group in groups:
         if group[0].startswith('Item Class:'):
@@ -1016,14 +1022,14 @@ def parse_game_item(itemtext):
             # if (groups.index(group) < len(group)-1) or len(pobitem['stats']) == 0:
             if (unmarked_blocks == 0):
                 unmarked_blocks += 1
-                print("appending stats")
+                #print("appending stats")
                 for line in group:
-                    print(line)
+                    #print(line)
                     pobitem['stats'].append(line)
             else:  # flavor
                 pass
 
-    print(pobitem)
+    #print(pobitem)
 
     return {
         'name': pobitem['name'], 'base': pobitem['base'], 'stats': pobitem['stats'], 'rarity': pobitem['rarity'],
@@ -1034,7 +1040,7 @@ def parse_game_item(itemtext):
 
 def parse_pob_item(itemtext):
     if "Implicits: " not in itemtext:
-        print("not in")
+        #print("not in")
         return parse_game_item(itemtext)
     item = itemtext.split('\n')
     item = [line for line in item if "---" not in line]
@@ -1095,7 +1101,7 @@ def parse_pob_item(itemtext):
         #         if "(implicit)" in item[index + offset]:
         #             pobitem['implicits'] = 0
         #             for line_inner in item[index + offset:]:
-        #                 print(line_inner)
+        #                 #print(line_inner)
         #                 if "(implicit)" in line_inner:
         #                     pobitem['implicits'] = pobitem['implicits'] + 1
         #                 if "---" in line_inner:
@@ -1195,7 +1201,7 @@ def parse_pob_item(itemtext):
         base = base.replace("Synthesised", "").strip()
     if "Synthesised" in name:
         name = name.replace("Synthesised", "").strip()
-    print(implicits, stat_text)
+    #print(implicits, stat_text)
     return {
         'name': name, 'base': base, 'stats': stat_text, 'rarity': pobitem['rarity'],
         'implicits': implicits, 'quality': int(qualtext), 'special': pobitem['special'],
@@ -1218,7 +1224,7 @@ def modify_base_stats(item):
         'chaos max': 0, 'chaos inc': 0, 'phys low': 0, 'phys max': 0, 'phys inc': int(item.quality),
         'cc': 0, 'range': 0, 'block': 0
     }
-    print(item.implicits, item.explicits)
+    #print(item.implicits, item.explicits)
     if item.implicits:
         for stat in unescape_to_list(item.implicits):
             text = stat.lower().replace('{crafted}', '').replace('{fractured}', '')
@@ -1346,7 +1352,7 @@ def modify_base_stats(item):
             item.attack_speed = f"{(_as + (stats['aspd'] / 100) * _as):.2}"
 
         if stats['cc']:
-            print(item.critical_chance.split("%")[0], stats['cc'])
+            #print(item.critical_chance.split("%")[0], stats['cc'])
             try:
                 cc = float(item.critical_chance.split("%")[0])
             except:
@@ -1447,7 +1453,7 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
 
     # if item['rarity'].lower() in ['unique', 'relic'] and char_api:
     #     if 1:
-    #         print(item)
+    #         #print(item)
     #         wiki_base = cl.find_items({'name': item['name']})[0]
     #     else:
     #         ex = AbsentItemBaseException(f"Could not find {item['name']}")
@@ -1653,7 +1659,7 @@ def parse_pob_xml(xml: str, cl=None):
                 continue
             lst = equipped['gem_groups'][skill.getchildren()[0].attrib['nameSpec']]
 
-        gems = skill.getchildren()
+        gems = skill.findall("Gem")
         for gem in gems:
             gem_d = {
                 'name': gem.attrib['nameSpec'],
@@ -1662,6 +1668,7 @@ def parse_pob_xml(xml: str, cl=None):
                 'quality': gem.attrib['quality']
             }
             lst.append(gem_d)
+
 
     stats = {}
     active_spec = int(tree.find('Tree').attrib['activeSpec']) - 1
@@ -2026,7 +2033,7 @@ def get_active_leagues():
 
 def _trade_api_query(data, league, endpoint):
     http = urllib3.PoolManager(headers={'user-agent': "PoE.py / urllib3"})
-    print(js.dumps(data).encode('utf-8'))
+    #print(js.dumps(data).encode('utf-8'))
     resp = http.request(
         'POST', f'https://www.pathofexile.com/api/trade/{endpoint}/{league}',
         body=js.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json',
