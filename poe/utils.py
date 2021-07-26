@@ -382,7 +382,7 @@ class ItemRender:
                     desc = item.description.split(' ')
                     description = [desc[x:x + 7] for x in range(0, len(desc), 7)]
                     for line in description:
-                        stats.append(self.prop(' '.join(line.replace("&lt;br&gt;"," ")), '', GEM_COLOR))
+                        stats.append(self.prop(' '.join(line).replace("&lt;br&gt;"," "), '', GEM_COLOR))
                 else:
                     if len(item.description.split("&lt;br&gt;")) > 1:
                         for line in item.description.split("&lt;br&gt;"):
