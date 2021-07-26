@@ -825,10 +825,10 @@ class ItemRender:
 
                             elif isinstance(grp, list):
                                 for cnt, soc in enumerate(grp):
-                                    print(soc_counter, soc_x, soc_y, self.soc_kv)
+                                    #print(soc_counter, soc_x, soc_y, self.soc_kv)
                                     sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
                                     if cnt+1 <= len(grp):
-                                        print("drawing link")
+                                        #print("drawing link")
                                         if soc_counter in [1, 4, 5]:
                                             sockets.alpha_composite(self.link, (soc_x + 33, soc_y + 11))
                                         if soc_counter in [2, 4]:
