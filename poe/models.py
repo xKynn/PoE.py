@@ -17,10 +17,10 @@ class ItemDrop:
 
 class Requirements:
     def __init__(self, dex, stren, intel, level):
-        self.dex = int(dex) if dex.isdigit() else None
-        self.str = int(stren) if stren.isdigit() else None
-        self.int = int(intel) if intel.isdigit() else None
-        self.level = int(level) if level.isdigit() and int(level) >= 1 else None
+        self.dex = int(dex) if (isinstance(dex, str) and dex.isdigit()) else None
+        self.str = int(stren) if (isinstance(stren, str) and stren.isdigit()) else None
+        self.int = int(intel) if (isinstance(intel, str) and intel.isdigit()) else None
+        self.level = int(level) if (isinstance(level, str) and level.isdigit()) and int(level) >= 1 else None
 
     @property
     def has_reqs(self):
