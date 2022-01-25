@@ -143,20 +143,66 @@ class Armour(Item):
                  is_relic, alt_art, quality, implicits, explicits, tags, icon, influences, armour_stats):
         super().__init__(base, item_class, name, rarity, size, drop, requirements, lore, help_text, is_corrupted,
                          is_relic, alt_art, quality, implicits, explicits, tags, icon, influences)
-        if armour_stats['armour'] != '0':
-            self.armour = armour_stats['armour']
+
+        if armour_stats['armour range average'] != '0':
+            self.armour = armour_stats['armour range average']
         else:
             self.armour = None
 
-        if armour_stats['evasion'] != '0':
-            self.evasion = armour_stats['evasion']
+        if armour_stats['armour range maximum'] != '0':
+            self.armour_max = armour_stats['armour range maximum']
+        else:
+            self.armour_max = None
+        
+        if armour_stats['armour range minimum'] != '0':
+            self.armour_min = armour_stats['armour range minimum']
+        else:
+            self.armour_min = None
+
+        if armour_stats['evasion range average'] != '0':
+            self.evasion = armour_stats['evasion range average']
         else:
             self.evasion = None
 
-        if armour_stats['energy shield'] != '0':
-            self.energy_shield = armour_stats['energy shield']
+        if armour_stats['evasion range maximum'] != '0':
+            self.evasion_max = armour_stats['evasion range maximum']
+        else:
+            self.evasion_max = None
+        
+        if armour_stats['evasion range minimum'] != '0':
+            self.evasion_min = armour_stats['evasion range minimum']
+        else:
+            self.evasion_min = None
+
+        if armour_stats['energy shield range average'] != '0':
+            self.energy_shield = armour_stats['energy shield range average']
         else:
             self.energy_shield = None
+
+        if armour_stats['energy shield range maximum'] != '0':
+            self.energy_shield_max = armour_stats['energy shield range maximum']
+        else:
+            self.energy_shield_max = None
+        
+        if armour_stats['energy shield range minimum'] != '0':
+            self.energy_shield_min = armour_stats['energy shield range minimum']
+        else:
+            self.energy_shield_min = None
+        
+        if armour_stats['ward range average'] != '0':
+            self.ward = armour_stats['ward range average']
+        else:
+            self.ward = None
+
+        if armour_stats['ward range maximum'] != '0':
+            self.ward_max = armour_stats['ward range maximum']
+        else:
+            self.ward_max = None
+        
+        if armour_stats['ward range minimum'] != '0':
+            self.ward_min = armour_stats['ward range minimum']
+        else:
+            self.ward_min = None
 
         if 'block range average' in armour_stats and armour_stats['block range average']:
             self.block = armour_stats['block range average']

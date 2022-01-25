@@ -16,6 +16,8 @@ from .models import Requirements
 from .models import Weapon
 from .utils import reg
 
+from collections import defaultdict
+
 
 class ClientBase:
     _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data', 'valid_filters.json')
@@ -63,9 +65,9 @@ class ClientBase:
     def gem_param_gen(self, where):
         where_str = self._param_gen(where, self.valid_gem_filters)
         params = {
-            'tables': "skill_levels,skill,items,skill_gems",
-            'join_on': "skill_levels._pageName=skill._pageName,skill_levels._pageName=items._pageName,skill_levels._pageName=skill_gems._pageName",
-            'fields': f"{','.join(self.valid_gem_filters)},skill_levels._pageName=name,items.inventory_icon, skill_gems.gem_tags, items.tags",
+            'tables': "skill_levels,skill,items,skill_gems,skill_quality",
+            'join_on': "skill_levels._pageName=skill._pageName,skill_levels._pageName=items._pageName,skill_levels._pageName=skill_gems._pageName,skill_levels._pageName=skill_quality._pageName",
+            'fields': f"{','.join(self.valid_gem_filters)},skill_levels._pageName=name,skill_quality.set_id,skill_quality.stat_text=qualtext,items.inventory_icon, skill_gems.gem_tags, items.tags",
             'where': where_str,
             'group_by': 'name'
         }
@@ -114,7 +116,7 @@ class ClientBase:
 
     @staticmethod
     def get_image_url(filename, req):
-        query_url = "https://pathofexile.gamepedia.com/api.php?action=query"
+        query_url = "https://poewiki.net/w/api.php?action=query"
         param = {
             'titles': filename,
             'prop': 'imageinfo&',
@@ -125,6 +127,7 @@ class ClientBase:
         return ic[0]['url'] if ic else ic
 
     def get_gems(self, where: dict, req, url):
+        where['set_id'] = '1'
         params = self.gem_param_gen(where)
         data = req(url, params=params)
         final_list = []
@@ -140,7 +143,10 @@ class ClientBase:
             vendors = self.extract_cargoquery(vendors_raw)
 
             for act in vendors:
-                act['classes'] = act['classes'].replace('�', ', ')
+                if 'classes' in act:
+                    act['classes'] = act['classes'].replace('�', ', ')
+                else:
+                    act['classes'] = "Marauder, Duelist, Ranger, Scion, Shadow, Templar, Witch"
             stats_params = {
                 'tables': "skill_levels",
                 'fields': ','.join(self.valid_gem_level_filters),
@@ -150,13 +156,13 @@ class ClientBase:
             stats_list = self.extract_cargoquery(stats_raw)
             stats = {}
 
-            if int(gem['has percentage mana cost']) or int(gem['has reservation mana cost']):
+            if 'mana reservation percent' in gem or 'life reservation percent' in gem:
                 aura = True
             else:
                 aura = False
 
             for stats_dict in stats_list:
-                stats[int(stats_dict['level'])] = stats_dict
+                stats[int(stats_dict['level'])] = defaultdict(lambda: None, stats_dict)
 
             # Fix for broken skill_levels table.
             # requirements = Requirements(
@@ -165,8 +171,8 @@ class ClientBase:
             # )
 
             requirements = Requirements(
-                stats[1]['dexterity requirement'], stats[1]['strength requirement'],
-                stats[1]['intelligence requirement'], stats[1]['level requirement']
+                stats[1].get('dexterity requirement', 'N/A'), stats[1].get('strength requirement', 'N/A'),
+                stats[1].get('intelligence requirement', 'N/A'), stats[1].get('level requirement', 'N/A')
             )
 
             inv_icon = self.get_image_url(gem['inventory icon'], req)
@@ -175,9 +181,11 @@ class ClientBase:
             else:
                 skill_icon = None
 
+            gem = defaultdict(lambda: None, gem)
+
             gem = Gem(gem["skill id"], gem["cast time"], gem["description"],
                       gem["name"], gem["item class restriction"], gem["stat text"],
-                      gem["quality stat text"], gem["radius"],
+                      gem["qualtext"], gem["radius"],
                       gem["radius description"], gem["radius secondary"],
                       gem["radius secondary description"], gem["radius tertiary"],
                       gem["radius tertiary description"], skill_icon,
@@ -191,6 +199,7 @@ class ClientBase:
         final_list = []
         influences = []
         for item in result_list:
+            item = defaultdict(lambda: None, item)
             if item['name'] in self.shaper_items:
                 influences.append("shaper")
             if item['name'] in self.elder_items:

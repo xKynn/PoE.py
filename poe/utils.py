@@ -294,17 +294,21 @@ class ItemRender:
                 if item.radius:
                     stats.append(self.prop("Radius: ", item.radius, None))
                 if not item.is_aura:
+                    print(item.stats_per_level)
                     # Enlighten Enhance etc only go up to 10
                     try:
                         stats.append(self.prop(
-                            "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[20]['mana cost']})", PROP_COLOR)
+                            "Cost: ", f"({item.stats_per_level[1]['cost amounts']}-{item.stats_per_level[20]['cost amounts']})", PROP_COLOR)
                         )
                     except KeyError:
                         stats.append(self.prop(
-                            "Mana Cost: ", f"({item.stats_per_level[1]['mana cost']}-{item.stats_per_level[10]['mana cost']})", PROP_COLOR)
+                            "Cost: ", f"({item.stats_per_level[1]['cost amounts']}-{item.stats_per_level[10]['cost amounts']})", PROP_COLOR)
                         )
                 else:
-                    stats.append(self.prop("Mana Reserved: ", f"{item.stats_per_level[0]['mana cost']}%", None))
+                    if 'mana reservation percent' in item.stats_per_level[0]:
+                        stats.append(self.prop("Reservation: ", f"{item.stats_per_level[0]['mana reservation percent']}% Mana", None))
+                    if 'life reservation percent' in item.stats_per_level[0]:
+                        stats.append(self.prop("Reservation: ", f"{item.stats_per_level[0]['life reservation percent']}% Life", None))
 
                 # Enlighten Enhance etc only go up to 10
                 try:
@@ -1425,7 +1429,7 @@ def modify_base_stats(item):
                 arm = int(ensure_rangeless(item.armour))
                 arm += stats['flat armour']
                 arm += (stats['inc armour'] / 100) * arm
-                item.armour = str(round(arm))
+                item.armour = str(round(arm)) + " (approx.)"
         except Exception:
             return
 
@@ -1433,18 +1437,18 @@ def modify_base_stats(item):
             ev = int(ensure_rangeless(item.evasion))
             ev += stats['flat evasion']
             ev += (stats['inc evasion'] / 100) * ev
-            item.evasion = str(round(ev))
+            item.evasion = str(round(ev)) + " (approx.)"
 
         if item.energy_shield:
             es = int(ensure_rangeless(item.energy_shield))
             es += stats['flat es']
             es += (stats['inc es'] / 100) * es
-            item.energy_shield = str(round(es))
+            item.energy_shield = str(round(es)) + " (approx.)"
 
         if "shield" in item.tags:
             block = int(ensure_rangeless(item.block))
             block += stats['block']
-            item.block = str(round(block))
+            item.block = (round(block))
 
 
 def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue=None):
@@ -2034,7 +2038,11 @@ def get_active_leagues():
 
 
 def _trade_api_query(data, league, endpoint):
-    http = urllib3.PoolManager(headers={'user-agent': "PoE.py / urllib3"})
+    http = urllib3.PoolManager(headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36',
+        "Upgrade-Insecure-Requests": "1", "DNT": "1",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate"})
     #print(js.dumps(data).encode('utf-8'))
     resp = http.request(
         'POST', f'https://www.pathofexile.com/api/trade/{endpoint}/{league}',

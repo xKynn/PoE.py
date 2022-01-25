@@ -14,7 +14,7 @@ urllib3.disable_warnings()
 class Client(ClientBase):
     def __init__(self, pool: urllib3.PoolManager = None):
         self.pool = pool or urllib3.PoolManager()
-        self.base_url = "https://pathofexile.gamepedia.com/api.php?action=cargoquery"
+        self.base_url = "https://poewiki.net/w/api.php?action=cargoquery"
 
     def request_gen(self, url, params=None):
         http = self.pool
