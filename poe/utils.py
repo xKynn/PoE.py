@@ -294,7 +294,7 @@ class ItemRender:
                 if item.radius:
                     stats.append(self.prop("Radius: ", item.radius, None))
                 if not item.is_aura:
-                    print(item.stats_per_level)
+                    #print(item.stats_per_level)
                     # Enlighten Enhance etc only go up to 10
                     try:
                         stats.append(self.prop(
@@ -661,7 +661,7 @@ class ItemRender:
 
         if not isinstance(poe_item, PassiveSkill):
             if 'gem' not in poe_item.tags and poe_item.base != "Prophecy":
-                if poe_item.base not in poe_item.name:
+                if poe_item.base and poe_item.base not in poe_item.name:
                     cur.move_x((self.header_font.getsize(poe_item.base)[0] // 2) * -1)
                     d.text(cur.pos, poe_item.base, fill=fill, font=self.header_font)
                     cur.reset_x()
@@ -813,7 +813,7 @@ class ItemRender:
                         soc_x = 0
                         soc_y = 0
                         for grp in socs:
-                            print(soc_counter, soc_x, soc_y)
+                            #(soc_counter, soc_x, soc_y)
                             if not isinstance(grp, list):
                                 soc = grp
                                 sockets.alpha_composite(self.soc_kv[soc], (soc_x, soc_y))
@@ -1601,7 +1601,9 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
 
 
 def parse_pob_xml(xml: str, cl=None):
+    print(xml)
     tree = Etree.ElementTree(Etree.fromstring(xml))
+    print(tree)
     equipped = {}
     slots = tree.findall('Items/Slot')
     for slot in slots:

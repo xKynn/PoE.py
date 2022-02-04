@@ -176,7 +176,7 @@ class ClientBase:
             )
 
             inv_icon = self.get_image_url(gem['inventory icon'], req)
-            if gem['skill icon']:
+            if 'skill icon' in gem:
                 skill_icon = self.get_image_url(gem['skill icon'], req)
             else:
                 skill_icon = None
