@@ -1601,9 +1601,9 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
 
 
 def parse_pob_xml(xml: str, cl=None):
-    print(xml)
+    #print(xml)
     tree = Etree.ElementTree(Etree.fromstring(xml))
-    print(tree)
+    #print(tree)
     equipped = {}
     slots = tree.findall('Items/Slot')
     for slot in slots:
@@ -1735,7 +1735,10 @@ def parse_pob_xml(xml: str, cl=None):
 
         stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
         stats['effective_crit_chance'] = tree.find('Build/PlayerStat[@stat="CritChance"]').attrib['value']
-        stats['chance_to_hit'] = tree.find('Build/PlayerStat[@stat="HitChance"]').attrib['value']
+        try:
+            stats['chance_to_hit'] = tree.find('Build/PlayerStat[@stat="HitChance"]').attrib['value']
+        except:
+            stats['chance_to_hit'] = "None"
         stats['str'] = tree.find('Build/PlayerStat[@stat="Str"]').attrib['value']
         stats['dex'] = tree.find('Build/PlayerStat[@stat="Dex"]').attrib['value']
         stats['int'] = tree.find('Build/PlayerStat[@stat="Int"]').attrib['value']
