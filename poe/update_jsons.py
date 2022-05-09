@@ -17,7 +17,7 @@ def update_keystones():
 
 def update_ascendancy():
     cl = Client()
-    asc = cl.find_passives({'ascendancy_class': "%"}, limit=500)
+    asc = cl.find_passives({'_pageName': "Passive Skill:Ascendancy%"}, limit=500)
     asc_json = {node.int_id: node.name for node in asc}
 
     with open(f"{_dir}/ascendancy.json", 'w+') as file:
