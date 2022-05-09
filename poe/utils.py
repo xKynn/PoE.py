@@ -1751,6 +1751,7 @@ def parse_pob_xml(xml: str, cl=None):
         except AttributeError:
             stats['degen'] = "0"
 
+        stats['armour'] = tree.find('Build/PlayerStat[@stat="Armour"]').attrib['value']
         stats['evasion'] = tree.find('Build/PlayerStat[@stat="Evasion"]').attrib['value']
         stats['block'] = tree.find('Build/PlayerStat[@stat="BlockChance"]').attrib['value']
         stats['spell_block'] = tree.find('Build/PlayerStat[@stat="SpellBlockChance"]').attrib['value']
@@ -1760,6 +1761,67 @@ def parse_pob_xml(xml: str, cl=None):
         stats['cold_res'] = tree.find('Build/PlayerStat[@stat="ColdResist"]').attrib['value']
         stats['light_res'] = tree.find('Build/PlayerStat[@stat="LightningResist"]').attrib['value']
         stats['chaos_res'] = tree.find('Build/PlayerStat[@stat="ChaosResist"]').attrib['value']
+
+        try:
+            stats['full_dps'] = tree.find('Build/PlayerStat[@stat="FullDPS"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['average_hit'] = tree.find('Build/PlayerStat[@stat="AverageHit"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['combined_avg'] = tree.find('Build/PlayerStat[@stat="CombinedAvg"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['AOE'] = tree.find('Build/PlayerStat[@stat="AreaOfEffectRadius"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['life_cost'] = tree.find('Build/PlayerStat[@stat="LifeCost"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['mana_cost'] = tree.find('Build/PlayerStat[@stat="ManaCost"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['total_ehp'] = tree.find('Build/PlayerStat[@stat="TotalEHP"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['max_hit'] = tree.find('Build/PlayerStat[@stat="SecondMinimalMaximumHitTaken"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['spell_suppression'] = tree.find('Build/PlayerStat[@stat="SpellSuppressionChance"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['total_dot'] = tree.find('Build/PlayerStat[@stat="TotalDot"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['total_dot_dps'] = tree.find('Build/PlayerStat[@stat="TotalDotDPS"]').attrib['value']
+        except:
+            pass
+
+        try:
+            stats['phys_reduc'] = tree.find('Build/PlayerStat[@stat="PhysicalDamageReduction"]').attrib['value']
+        except:
+            pass
+
         try:
             stats['power_charges'] = tree.find('Build/PlayerStat[@stat="PowerChargesMax"]').attrib['value']
         except Exception:

@@ -8,7 +8,7 @@ _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 
 def update_keystones():
     cl = Client()
-    ks = cl.find_passives({'is_keystone': "1"})
+    ks = cl.find_passives({'is_keystone': "1"}, limit=500)
     ks_json = {node.int_id: node.name for node in ks}
 
     with open(f"{_dir}/keystones.json", 'w+') as file:
