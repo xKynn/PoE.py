@@ -22,6 +22,7 @@ class Client(ClientBase):
 
     @cached(cache)
     def cache_requests(self, method, url):
+        http = self.pool
         resp = http.request(method, url)
         return resp
 
