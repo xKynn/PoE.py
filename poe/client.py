@@ -3,13 +3,13 @@ from urllib.parse import quote_plus
 
 import urllib3
 
-from cachetools import cached, TTLCache
+from cachetools import cached, Cache
 from .clientbase import ClientBase
 from .exceptions import NotFoundException
 from .exceptions import RequestException
 from .exceptions import ServerException
 
-cache = TTLCache(maxsize=30000, ttl=86000)
+cache = TTLCache(maxsize=30000)
 
 urllib3.disable_warnings()
 
