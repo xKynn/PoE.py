@@ -21,7 +21,7 @@ class Client(ClientBase):
         
 
     @cached(cache)
-    def cache_requests(method, url):
+    def cache_requests(self, method, url):
         resp = http.request(method, url)
         return resp
 
@@ -40,7 +40,7 @@ class Client(ClientBase):
         try:
             r = cache_requests('GET', final_url)
         except Exception:
-            return print(final_url, params)
+            return print(final_url, params, r)
 
         try:
             resp = json.loads(r.data.decode('utf-8'))
