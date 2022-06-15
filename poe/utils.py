@@ -1795,27 +1795,27 @@ def parse_pob_xml(xml: str, cl=None):
         try:
             stats['phys_max_hit'] = tree.find('Build/PlayerStat[@stat="PhysicalMaximumHitTaken"]').attrib['value']
         except:
-            pass
+            stats['phys_max_hit'] = 0
 
         try:
             stats['fire_max_hit'] = tree.find('Build/PlayerStat[@stat="FireMaximumHitTaken"]').attrib['value']
         except:
-            pass
+            stats['fire_max_hit'] = 0
 
         try:
             stats['cold_max_hit'] = tree.find('Build/PlayerStat[@stat="ColdMaximumHitTaken"]').attrib['value']
         except:
-            pass
+            stats['fire_max_hit'] = 0
 
         try:
             stats['light_max_hit'] = tree.find('Build/PlayerStat[@stat="LightningMaximumHitTaken"]').attrib['value']
         except:
-            pass
+           stats['fire_max_hit'] = 0
 
         try:
             stats['chaos_max_hit'] = tree.find('Build/PlayerStat[@stat="ChaosMaximumHitTaken"]').attrib['value']
         except:
-            pass
+            stats['fire_max_hit'] = 0
 
         try:
             stats['spell_suppression'] = tree.find('Build/PlayerStat[@stat="SpellSuppressionChance"]').attrib['value']
