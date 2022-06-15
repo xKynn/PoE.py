@@ -38,12 +38,15 @@ class ClientBase:
     @staticmethod
     def extract_cargoquery(data):
         extracted = []
-        if 'error' in data:
-            print(data['error'])
-            print(traceback.format_stack())
-        else:
-            for item in data['cargoquery']:
-                extracted.append(item['title'])
+        try:
+            if 'error' in data:
+                print(data['error'])
+                print(traceback.format_stack())
+            else:
+                for item in data['cargoquery']:
+                    extracted.append(item['title'])
+        except:
+            print(data)
         return extracted
 
     @staticmethod
