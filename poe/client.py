@@ -39,7 +39,7 @@ class Client(ClientBase):
             final_url = f"{final_url}&{key}={value.replace(' ', '%20')}"
 
         try:
-            r = cache_requests('GET', final_url)
+            r = self.cache_requests('GET', final_url)
         except Exception:
             return print(final_url, params, r)
 
