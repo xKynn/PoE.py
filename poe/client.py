@@ -9,7 +9,7 @@ from .exceptions import NotFoundException
 from .exceptions import RequestException
 from .exceptions import ServerException
 
-cache = TTLCache(maxsize=30000)
+cache = Cache(maxsize=30000)
 
 urllib3.disable_warnings()
 
