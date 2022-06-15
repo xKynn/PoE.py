@@ -3,10 +3,13 @@ from urllib.parse import quote_plus
 
 import urllib3
 
+from cachetools import cached, TTLCache
 from .clientbase import ClientBase
 from .exceptions import NotFoundException
 from .exceptions import RequestException
 from .exceptions import ServerException
+
+cache = TTLCache(maxsize=30000, ttl=86000)
 
 urllib3.disable_warnings()
 
@@ -15,6 +18,13 @@ class Client(ClientBase):
     def __init__(self, pool: urllib3.PoolManager = None):
         self.pool = pool or urllib3.PoolManager()
         self.base_url = "https://poewiki.net/w/api.php?action=cargoquery"
+        
+
+    @cached(cache)
+    def cache_requests(method, url):
+        resp = http.request(method, url)
+        return resp
+
 
     def request_gen(self, url, params=None):
         http = self.pool
@@ -28,7 +38,7 @@ class Client(ClientBase):
             final_url = f"{final_url}&{key}={value.replace(' ', '%20')}"
 
         try:
-            r = http.request('GET', final_url)
+            r = cache_requests('GET', final_url)
         except Exception:
             return print(final_url, params)
 
