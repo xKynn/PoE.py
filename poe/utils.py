@@ -494,7 +494,7 @@ class ItemRender:
             for line in unescape_to_list(item.stat_text):
                 stats.append(self.prop(line, '', PROP_COLOR))
             if item.icon:
-                    http = urllib3.PoolManager()
+                http = urllib3.PoolManager()
 
                 @cached(cache)
                 def ico(icon):
