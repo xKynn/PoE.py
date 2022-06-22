@@ -117,17 +117,6 @@ class ClientBase:
             ))
         return final_list
 
-    @staticmethod
-    def get_image_url(filename, req):
-        query_url = "https://poewiki.net/w/api.php?action=query"
-        param = {
-            'titles': filename,
-            'prop': 'imageinfo&',
-            'iiprop': 'url'
-        }
-        dat = req(query_url, param)
-        ic = dat['query']['pages'][list(dat['query']['pages'].keys())[0]].get('imageinfo', None)
-        return ic[0]['url'] if ic else ic
 
     def get_gems(self, where: dict, req, url):
         where['set_id'] = '1'

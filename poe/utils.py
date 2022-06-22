@@ -7,6 +7,8 @@ import re
 import threading
 import unicodedata
 import xml.etree.cElementTree as Etree
+from cachetools import cached
+from .cache import cache
 from collections import defaultdict
 from collections import namedtuple
 from io import BytesIO
@@ -462,6 +464,7 @@ class ItemRender:
             if item.icon:
                 http = urllib3.PoolManager()
 
+                @cached(cache)
                 def ico(icon):
                     r = http.request('GET', icon, preload_content=False)
                     im = Image.open(BytesIO(r.read()))
@@ -491,8 +494,9 @@ class ItemRender:
             for line in unescape_to_list(item.stat_text):
                 stats.append(self.prop(line, '', PROP_COLOR))
             if item.icon:
-                http = urllib3.PoolManager()
+                    http = urllib3.PoolManager()
 
+                @cached(cache)
                 def ico(icon):
                     r = http.request('GET', icon, preload_content=False)
                     im = Image.open(BytesIO(r.read()))
@@ -532,7 +536,12 @@ class ItemRender:
 
     def render_divcard(self, card):
         http = urllib3.PoolManager()
-        r = http.request('GET', card.card_art, preload_content=False)
+
+        @cached(cache)
+        def card_art(method, url):
+            return http.request('GET', card.card_art, preload_content=False)
+        
+        r = card_art('GET', card.card_art)
         art = Image.open(BytesIO(r.read()))
         art = art.convert('RGBA')
         item = Image.new('RGBA', self.div_frame.size, (255, 0, 0, 0))
