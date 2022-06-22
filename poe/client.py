@@ -59,8 +59,7 @@ class Client(ClientBase):
             raise RequestException(r, resp)
 
     @cached(cache)
-    @staticmethod
-    def get_image_url(filename, req):
+    def get_image_url(self, filename, req):
         query_url = "https://poewiki.net/w/api.php?action=query"
         param = {
             'titles': filename,
