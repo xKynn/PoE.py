@@ -14,7 +14,7 @@
          "evasion_range_maximum", "evasion_range_minimum", "ward_range_maximum", "ward_range_minimum", "armour_range_average",
          "evasion_range_average", "energy_shield_range_average", "ward_range_average"],
   "gem": ["active_skill_name", "cast_time", "skill.description", "item_class_restriction", "max_level", "skill.name",
-          "projectile_speed", "skill.quality_stat_text", "radius", "radius_description",
+          "projectile_speed", "skill_quality.stat_text=quality_stat_text", "radius", "radius_description",
           "radius_secondary", "radius_secondary_description", "radius_tertiary",
           "radius_tertiary_description", "skill_icon", "skill_id", "skill_screenshot",
           "skill.stat_text"],
