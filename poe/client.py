@@ -3,13 +3,14 @@ from urllib.parse import quote_plus
 
 import urllib3
 
-from cachetools import cached, Cache
+from cachetools import cached
+from .cache import cache
 from .clientbase import ClientBase
 from .exceptions import NotFoundException
 from .exceptions import RequestException
 from .exceptions import ServerException
 
-cache = Cache(maxsize=30000)
+
 
 urllib3.disable_warnings()
 
@@ -56,6 +57,18 @@ class Client(ClientBase):
             raise ServerException(r, resp)
         else:
             raise RequestException(r, resp)
+
+    @cached(cache)
+    def get_image_url(self, filename, req):
+        query_url = "https://poewiki.net/w/api.php?action=query"
+        param = {
+            'titles': filename,
+            'prop': 'imageinfo&',
+            'iiprop': 'url'
+        }
+        dat = req(query_url, param)
+        ic = dat['query']['pages'][list(dat['query']['pages'].keys())[0]].get('imageinfo', None)
+        return ic[0]['url'] if ic else ic
 
     def find_items(self, where: dict, limit=None):
         params = self.item_param_gen(where, limit)
