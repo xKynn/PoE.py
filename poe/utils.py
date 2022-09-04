@@ -1610,13 +1610,14 @@ def _get_wiki_base(item, object_dict, cl, slot, char_api=False, thread_exc_queue
 
 
 def parse_pob_xml(xml: str, cl=None):
-    #print(xml)
     tree = Etree.ElementTree(Etree.fromstring(xml))
-    #print(tree)
     equipped = {}
     slots = tree.findall('Items/Slot')
+    if not slots:
+        activeitemset = tree.find('Items').attrib.get('activeItemSet')
+        slots = tree.findall(f'Items/ItemSet[@id="{activeitemset}"]/Slot')
     for slot in slots:
-        if 'socket' in slot.attrib['name'].lower():
+        if 'socket' in slot.attrib['name'].lower() or 'swap' in slot.attrib['name'].lower():
             continue
         equipped[slot.attrib['name']] = {}
         equipped[slot.attrib['name']]['id'] = slot.attrib['itemId']
@@ -1627,6 +1628,7 @@ def parse_pob_xml(xml: str, cl=None):
         exc_queue = Queue()
         for slot in equipped:
             item_id = equipped[slot]['id']
+            print(slot, equipped[slot])
             tree_item = tree.find(f'Items/Item[@id="{item_id}"]')
             if 'variant' in tree_item.attrib:
                 lines = tree_item.text.replace('\t', '').split('\n')
@@ -1639,7 +1641,7 @@ def parse_pob_xml(xml: str, cl=None):
             equipped[slot]['raw'] = tree_item.text.replace('\t', '')
             try:
                 equipped[slot]['parsed'] = parse_pob_item(equipped[slot]['raw'])
-            except Exception:
+            except:
                 continue
 
             item = equipped[slot]['parsed']
@@ -1721,18 +1723,23 @@ def parse_pob_xml(xml: str, cl=None):
             stats['jewels'].append(parsed)
 
     stats['equipped'] = equipped
-    try:
-        stats['bandit'] = tree.find('Build').attrib['bandit']
-    except Exception:
-        stats['bandit'] = "None"
+
+    def safe_find(loc, attr, default=0.0):
+        try:
+            ret = tree.find(loc).attrib.get(attr, default)
+            return ret
+        except:
+            return 0
+
+    stats['bandit'] = safe_find('Build', 'bandit')
 
     try:
-        stats['class'] = tree.find('Build').attrib.get('className', "None")
-        stats['ascendancy'] = tree.find('Build').attrib.get('ascendClassName', "None")
+        stats['class'] = safe_find('Build', 'className', "None")
+        stats['ascendancy'] = safe_find('Build', 'ascendClassName')
         try:
-            stats['total_dps'] = tree.find('Build/PlayerStat[@stat="CombinedDPS"]').attrib['value']
-        except Exception:
             stats['total_dps'] = tree.find('Build/PlayerStat[@stat="TotalDPS"]').attrib['value']
+        except Exception:
+            stats['total_dps'] = tree.find('Build/PlayerStat[@stat="CombinedDPS"]').attrib['value']
 
         stats['level'] = tree.find('Build').attrib['level']
         try:
@@ -1742,122 +1749,65 @@ def parse_pob_xml(xml: str, cl=None):
         except Exception:
             stats['main_skill'] = " "
 
-        stats['crit_chance'] = tree.find('Build/PlayerStat[@stat="PreEffectiveCritChance"]').attrib['value']
-        stats['effective_crit_chance'] = tree.find('Build/PlayerStat[@stat="CritChance"]').attrib['value']
-        try:
-            stats['chance_to_hit'] = tree.find('Build/PlayerStat[@stat="HitChance"]').attrib['value']
-        except:
-            stats['chance_to_hit'] = "None"
-        stats['str'] = tree.find('Build/PlayerStat[@stat="Str"]').attrib['value']
-        stats['dex'] = tree.find('Build/PlayerStat[@stat="Dex"]').attrib['value']
-        stats['int'] = tree.find('Build/PlayerStat[@stat="Int"]').attrib['value']
-        stats['life'] = tree.find('Build/PlayerStat[@stat="Life"]').attrib['value']
-        stats['life_regen'] = tree.find('Build/PlayerStat[@stat="LifeRegen"]').attrib['value']
-        stats['es'] = tree.find('Build/PlayerStat[@stat="EnergyShield"]').attrib['value']
-        stats['es_regen'] = tree.find('Build/PlayerStat[@stat="EnergyShieldRegen"]').attrib['value']
-        try:
-            stats['degen'] = tree.find('Build/PlayerStat[@stat="TotalDegen"]').attrib['value']
-        except AttributeError:
-            stats['degen'] = "0"
+        stats['crit_chance'] = safe_find('Build/PlayerStat[@stat="PreEffectiveCritChance"]', 'value')
+        stats['effective_crit_chance'] = safe_find('Build/PlayerStat[@stat="CritChance"]', 'value')
+        stats['chance_to_hit'] = safe_find('Build/PlayerStat[@stat="HitChance"]', 'value')
+        stats['str'] = safe_find('Build/PlayerStat[@stat="Str"]', 'value')
+        stats['dex'] = safe_find('Build/PlayerStat[@stat="Dex"]', 'value')
+        stats['int'] = safe_find('Build/PlayerStat[@stat="Int"]', 'value')
+        stats['life'] = safe_find('Build/PlayerStat[@stat="Life"]', 'value')
+        stats['life_regen'] = safe_find('Build/PlayerStat[@stat="LifeRegen"]', 'value', 0.0)
+        stats['es'] = safe_find('Build/PlayerStat[@stat="EnergyShield"]', 'value')
+        stats['es_regen'] = safe_find('Build/PlayerStat[@stat="EnergyShieldRegen"]', 'value')
+        stats['degen'] = safe_find('Build/PlayerStat[@stat="TotalDegen"]', 'value', 0.0)
 
-        stats['armour'] = tree.find('Build/PlayerStat[@stat="Armour"]').attrib['value']
-        stats['evasion'] = tree.find('Build/PlayerStat[@stat="Evasion"]').attrib['value']
-        stats['block'] = tree.find('Build/PlayerStat[@stat="BlockChance"]').attrib['value']
-        stats['spell_block'] = tree.find('Build/PlayerStat[@stat="SpellBlockChance"]').attrib['value']
-        stats['dodge'] = tree.find('Build/PlayerStat[@stat="AttackDodgeChance"]').attrib['value']
-        stats['spell_dodge'] = tree.find('Build/PlayerStat[@stat="SpellDodgeChance"]').attrib['value']
-        stats['fire_res'] = tree.find('Build/PlayerStat[@stat="FireResist"]').attrib['value']
-        stats['cold_res'] = tree.find('Build/PlayerStat[@stat="ColdResist"]').attrib['value']
-        stats['light_res'] = tree.find('Build/PlayerStat[@stat="LightningResist"]').attrib['value']
-        stats['chaos_res'] = tree.find('Build/PlayerStat[@stat="ChaosResist"]').attrib['value']
+        stats['armour'] = safe_find('Build/PlayerStat[@stat="Armour"]', 'value')
+        stats['evasion'] = safe_find('Build/PlayerStat[@stat="Evasion"]', 'value')
+        stats['block'] = safe_find('Build/PlayerStat[@stat="BlockChance"]', 'value')
+        stats['spell_block'] = safe_find('Build/PlayerStat[@stat="SpellBlockChance"]', 'value')
+        stats['dodge'] = safe_find('Build/PlayerStat[@stat="AttackDodgeChance"]', 'value')
+        stats['spell_dodge'] = safe_find('Build/PlayerStat[@stat="SpellDodgeChance"]', 'value')
+        stats['fire_res'] = safe_find('Build/PlayerStat[@stat="FireResist"]', 'value')
+        stats['cold_res'] = safe_find('Build/PlayerStat[@stat="ColdResist"]', 'value')
+        stats['light_res'] = safe_find('Build/PlayerStat[@stat="LightningResist"]', 'value')
+        stats['chaos_res'] = safe_find('Build/PlayerStat[@stat="ChaosResist"]', 'value')
 
-        try:
-            stats['full_dps'] = tree.find('Build/PlayerStat[@stat="FullDPS"]').attrib['value']
-        except:
-            pass
+        stats['full_dps'] = safe_find('Build/PlayerStat[@stat="FullDPS"]', 'value')
 
-        try:
-            stats['average_hit'] = tree.find('Build/PlayerStat[@stat="AverageHit"]').attrib['value']
-        except:
-            pass
+        stats['average_hit'] = safe_find('Build/PlayerStat[@stat="AverageHit"]', 'value')
 
-        try:
-            stats['combined_avg'] = tree.find('Build/PlayerStat[@stat="CombinedAvg"]').attrib['value']
-        except:
-            pass
+        stats['combined_avg'] = safe_find('Build/PlayerStat[@stat="CombinedAvg"]', 'value')
 
-        try:
-            stats['AOE'] = tree.find('Build/PlayerStat[@stat="AreaOfEffectRadius"]').attrib['value']
-        except:
-            pass
+        stats['AOE'] = safe_find('Build/PlayerStat[@stat="AreaOfEffectRadius"]', 'value')
 
-        try:
-            stats['life_cost'] = tree.find('Build/PlayerStat[@stat="LifeCost"]').attrib['value']
-        except:
-            pass
+        stats['life_cost'] = safe_find('Build/PlayerStat[@stat="LifeCost"]', 'value')
 
-        try:
-            stats['mana_cost'] = tree.find('Build/PlayerStat[@stat="ManaCost"]').attrib['value']
-        except:
-            pass
+        stats['mana_cost'] = safe_find('Build/PlayerStat[@stat="ManaCost"]', 'value')
 
-        try:
-            stats['phys_max_hit'] = tree.find('Build/PlayerStat[@stat="PhysicalMaximumHitTaken"]').attrib['value']
-        except:
-            stats['phys_max_hit'] = 0
 
-        try:
-            stats['fire_max_hit'] = tree.find('Build/PlayerStat[@stat="FireMaximumHitTaken"]').attrib['value']
-        except:
-            stats['fire_max_hit'] = 0
+        stats['phys_max_hit'] = safe_find('Build/PlayerStat[@stat="PhysicalMaximumHitTaken"]', 'value', 0)
 
-        try:
-            stats['cold_max_hit'] = tree.find('Build/PlayerStat[@stat="ColdMaximumHitTaken"]').attrib['value']
-        except:
-            stats['cold_max_hit'] = 0
+        stats['fire_max_hit'] = safe_find('Build/PlayerStat[@stat="FireMaximumHitTaken"]', 'value', 0)
 
-        try:
-            stats['light_max_hit'] = tree.find('Build/PlayerStat[@stat="LightningMaximumHitTaken"]').attrib['value']
-        except:
-           stats['light_max_hit'] = 0
+        stats['cold_max_hit'] = safe_find('Build/PlayerStat[@stat="ColdMaximumHitTaken"]', 'value', 0)
 
-        try:
-            stats['chaos_max_hit'] = tree.find('Build/PlayerStat[@stat="ChaosMaximumHitTaken"]').attrib['value']
-        except:
-            stats['chaos_max_hit'] = 0
+        stats['light_max_hit'] = safe_find('Build/PlayerStat[@stat="LightningMaximumHitTaken"]', 'value', 0)
 
-        try:
-            stats['spell_suppression'] = tree.find('Build/PlayerStat[@stat="SpellSuppressionChance"]').attrib['value']
-        except:
-            pass
+        stats['chaos_max_hit'] = safe_find('Build/PlayerStat[@stat="ChaosMaximumHitTaken"]', 'value', 0)
 
-        try:
-            stats['total_dot'] = tree.find('Build/PlayerStat[@stat="TotalDot"]').attrib['value']
-        except:
-            pass
+        stats['spell_suppression'] = safe_find('Build/PlayerStat[@stat="SpellSuppressionChance"]', 'value', 0)
 
-        try:
-            stats['total_dot_dps'] = tree.find('Build/PlayerStat[@stat="TotalDotDPS"]').attrib['value']
-        except:
-            pass
+        stats['total_dot'] = safe_find('Build/PlayerStat[@stat="TotalDot"]', 'value')
 
-        try:
-            stats['phys_reduc'] = tree.find('Build/PlayerStat[@stat="PhysicalDamageReduction"]').attrib['value']
-        except:
-            pass
+        stats['total_dot_dps'] = safe_find('Build/PlayerStat[@stat="TotalDotDPS"]', 'value')
 
-        try:
-            stats['power_charges'] = tree.find('Build/PlayerStat[@stat="PowerChargesMax"]').attrib['value']
-        except Exception:
-            stats['power_charges'] = '3'
-        try:
-            stats['frenzy_charges'] = tree.find('Build/PlayerStat[@stat="FrenzyChargesMax"]').attrib['value']
-        except Exception:
-            stats['frenzy_charges'] = '3'
-        try:
-            stats['endurance_charges'] = tree.find('Build/PlayerStat[@stat="EnduranceChargesMax"]').attrib['value']
-        except Exception:
-            stats['endurance_charges'] = '3'
+        stats['phys_reduc'] = safe_find('Build/PlayerStat[@stat="PhysicalDamageReduction"]', 'value')
+
+        stats['power_charges'] = safe_find('Build/PlayerStat[@stat="PowerChargesMax"]', 'value', 3)
+
+        stats['frenzy_charges'] = safe_find('Build/PlayerStat[@stat="FrenzyChargesMax"]', 'value', 3)
+
+        stats['endurance_charges'] = safe_find('Build/PlayerStat[@stat="EnduranceChargesMax"]', 'value', 3)
 
     except AttributeError:
         raise OutdatedPoBException()
