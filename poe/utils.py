@@ -59,7 +59,7 @@ class Cursor:
         self.x = self.x_start
 
 
-# Cause relative paths are ass
+# Help with accessing data directory
 _dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 
 # Find links wrapped in [[]] returned by Gamepedia
@@ -1630,6 +1630,8 @@ def parse_pob_xml(xml: str, cl=None):
             item_id = equipped[slot]['id']
             print(slot, equipped[slot])
             tree_item = tree.find(f'Items/Item[@id="{item_id}"]')
+            if not tree_item:
+                continue
             if 'variant' in tree_item.attrib:
                 lines = tree_item.text.replace('\t', '').split('\n')
                 for line in lines[:]:
