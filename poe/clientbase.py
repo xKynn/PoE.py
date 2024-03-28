@@ -51,6 +51,8 @@ class ClientBase:
 
     @staticmethod
     def bool_(val):
+        if not val:
+            val = 0
         return bool(int(val))
 
     def _param_gen(self, where, filters):

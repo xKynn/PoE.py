@@ -263,7 +263,7 @@ class ItemRender:
                     stats.append(self.prop("Critical Strike Chance: ", item.critical_chance, None))
                 if item.attack_speed:
                     stats.append(self.prop("Attacks Per Second: ", item.attack_speed, PROP_COLOR))
-                if int(item.range):
+                if float(item.range):
                     stats.append(self.prop("Weapon Range: ", item.range, None))
 
                 stats.append(separator)
